@@ -378,9 +378,16 @@ body.has-bnav #app{padding-bottom:78px}
 .cs-r.g b{font-family:'Changa',sans-serif;font-size:24px}
 .cart-acts{display:grid;gap:10px;margin-top:14px}
 .btn.wa-send{background:#25D366;border-color:#25D366;color:#fff;font-size:17px}
-#cartbar{display:none!important}
+#cartbar{position:fixed;z-index:44;right:12px;left:84px;bottom:calc(72px + env(safe-area-inset-bottom,0px));display:none;align-items:center;gap:8px;padding:10px 14px;border:0;border-radius:14px;background:var(--dk);color:#fff;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(15,35,71,.35);cursor:pointer}
+#cartbar svg{width:20px;height:20px;color:var(--y);flex:none}
+#cartbar .cb-t,#cartbar .cb-s{white-space:nowrap}
+#cartbar{font-size:13px;padding:10px 12px;gap:6px}
+#cartbar .cb-g{font-size:12px}
+#cartbar .cb-t b{background:var(--y);color:var(--yink);border-radius:999px;padding:1px 8px;margin:0 2px}
+#cartbar .cb-s{margin-inline-start:auto;font-family:'Changa',sans-serif;font-size:15px}
+#cartbar .cb-g{color:var(--y);font-size:13px;white-space:nowrap}
 @keyframes cbump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
-.cart-badge.bump{animation:cbump .45s ease}
+#cartbar.bump,.cart-badge.bump{animation:cbump .45s ease}
 .bnav-cart.has-items svg{color:var(--bad)}
 .bnav-cart.has-items span{color:var(--bad)}
 
@@ -601,6 +608,21 @@ try{if(sessionStorage.getItem('manar_admin')==='1')S.admin=true}catch(e){}
 /* ================= product helpers ================= */
 const prod=id=>DB.products.find(p=>p.id===id);
 const sell=p=>(+p.pNew>0?+p.pNew:(+p.pOld>0?+p.pOld:0));
+function itemPOld(it){
+  if(it&&it.pOld!=null&&it.pOld!=='')return +it.pOld||0;
+  if(it&&it.pid){const p=prod(it.pid);if(p)return +p.pOld||0}
+  return 0;
+}
+function sumBeforeDisc(items){
+  return (items||[]).reduce((a,it)=>a+itemPOld(it)*(+it.qty||0),0);
+}
+function beforeDiscHTML(items,sub){
+  const before=sumBeforeDisc(items);
+  if(!(before>0))return '';
+  const diff=before-sub;
+  return `<div style="border-top:1px dashed var(--line);margin-top:8px;padding-top:8px"><div><span>إجمالي قبل الخصم <small class="mute">(مرجع — لا يظهر في الطباعة)</small></span><b>${money(before)}</b></div>
+  ${diff?`<div style="color:${diff>0?'var(--ok)':'var(--bad)'}"><span>${diff>0?'الفرق (توفير/هامش ظاهر)':'الفرق'}</span><b>${diff>0?'+':''}${money(diff)}</b></div>`:''}</div>`;
+}
 const UNITS=['قطعة','لفة','متر','علبة','كرتونة','كيلو','متر طولي'];
 const unitOf=p=>((p&&p.unit)||'قطعة');
 const qtyStep=u=>(u==='لفة'||u==='متر'||u==='كيلو'||u==='متر طولي')?0.5:1;
@@ -707,7 +729,7 @@ function addToCart(p,qty){
   const ex=S.cart.find(x=>x.pid===p.id);
   if(ex)ex.qty=normQty((+ex.qty||0)+qty,p.unit||'قطعة');
   else S.cart.push({pid:p.id,name:p.name,company:p.company||'',unit:p.unit||'قطعة',warranty:p.warranty||'',price:+price||0,qty});
-  try{beep('ok')}catch(e){}
+  toast('تمت الإضافة إلى السلة','ok');
   updateCartBadge();
 }
 function cartLines(){return(S.cart||[]).length}
@@ -717,7 +739,13 @@ function updateCartBadge(){
   const grew=n>_lastCartN;_lastCartN=n;
   document.querySelectorAll('.cart-badge').forEach(el=>{el.textContent=n||'';el.style.display=n?'grid':'none';if(grew){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}});
   document.querySelectorAll('.bnav-cart').forEach(el=>el.classList.toggle('has-items',n>0));
-  const old=$('#cartbar');if(old)old.remove();
+  let bar=$('#cartbar');
+  if(!bar){bar=document.createElement('button');bar.id='cartbar';bar.type='button';bar.setAttribute('data-act','navcart');document.body.appendChild(bar)}
+  if(n>0&&S.view==='shop'){
+    bar.innerHTML=`${ic('box')}<span class="cb-t">في السلة <b>${n}</b> ${n>10?'منتج':(n===1?'منتج':'منتجات')}</span><span class="cb-s">${cartTotal()>0?fmt(cartTotal())+' ج.م':''}</span><span class="cb-g">عرض السلة ›</span>`;
+    bar.style.display='flex';
+    if(grew){bar.classList.remove('bump');void bar.offsetWidth;bar.classList.add('bump')}
+  }else bar.style.display='none';
 }
 function bottomNavHTML(){
   const n=cartLines();
@@ -834,7 +862,6 @@ function cartWhatsApp(){
 
 function toast(msg,type){
   if(type==='ok'||type==='err')beep(type);
-  if(type==='ok'&&_scanCont)return;
   const t=document.createElement('div');t.textContent=msg;if(type)t.className=type;$('#toast').appendChild(t);
   setTimeout(()=>t.remove(),type==='err'?4500:2800);
 }
@@ -947,7 +974,7 @@ const DEFLOGO='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwQDAw
 const logoHTML=(logo)=>`<img src="${esc(logo||DEFLOGO)}" alt="شعار ${SHOP}">`;
 
 /* ================= barcode ================= */
-let _stream=null,_scan=false,_h5=null,_scanCb=null,_scanCont=null;
+let _stream=null,_scan=false,_h5=null,_scanCb=null;
 const H5URLS=[
   'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
   'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
@@ -989,59 +1016,14 @@ function releaseCam(){
   const h=_h5;_h5=null;
   if(h){Promise.resolve().then(()=>h.stop().catch(()=>{})).then(()=>{try{h.clear()}catch(e){}}).catch(()=>{})}
 }
-function stopScan(){
-  const C=_scanCont;_scanCont=null;
-  releaseCam();const s=$('#scanbox');s.classList.remove('open');s.innerHTML='';
-  if(C&&C.total)toast('تم المسح المتتابع: '+C.total+' قراءة','ok');
-}
-function contUI(){
-  const C=_scanCont,el=$('#scanlist');if(!C||!el)return;
-  el.innerHTML=`<div class="b" style="margin:10px 0 4px">تمت قراءة ${C.total} — اللي اتضاف:</div>`+
-  C.order.slice(0,6).map(k=>{const r=C.map[k];return r.bad
-    ?`<div style="color:var(--bad);font-weight:600;padding:3px 0">✕ باركود غير مسجل: ${esc(r.name)}</div>`
-    :`<div style="padding:3px 0"><span style="color:var(--ok);font-weight:700">✓</span> ${esc(r.name)} <b>×${r.n}</b></div>`}).join('');
-}
-function contCode(code){
-  const C=_scanCont;if(!C)return;
-  const now=Date.now();
-  /* نفس الباركود لسه قدام الكاميرا → تجاهله، لازم يبعد ~1.5 ثانية قبل ما يتحسب تاني */
-  const same=(C.last===code&&now-C.lastT<1500);
-  C.last=code;C.lastT=now;
-  if(same)return;
-  let r;try{r=C.fn(code)}catch(e){r={ok:false}}
-  if(!r)r={ok:false};
-  const key=r.ok?'p:'+r.name:'x:'+code;
-  if(!C.map[key]){C.map[key]={name:r.ok?r.name:code,n:0,bad:!r.ok};}
-  C.map[key].n++;C.total++;
-  C.order=[key].concat(C.order.filter(k=>k!==key));
-  contUI();
-}
-function contResult(code,addFn){
-  const p=DB.products.find(x=>x.barcode&&x.barcode===code);
-  if(!p){toast('باركود غير مسجل: '+code,'err');return{ok:false}}
-  addFn(p);return{ok:true,name:p.name};
-}
-function gqtAddQuiet(p){
-  const G=S.gqt;if(!G||!G.companies.length){toast('اختر الشركات أولًا','err');return}
-  const u=unitOf(p),st=qtyStep(u);
-  const ex=G.items.find(x=>x.pid===p.id);
-  if(ex){ex.qty=normQty((+ex.qty||0)+st,u);gqtUpd();toast('أضيف: '+p.name,'ok')}
-  else gqtAddItem(p.name,st,p.id,sell(p));
-}
+function stopScan(){releaseCam();const s=$('#scanbox');s.classList.remove('open');s.innerHTML=''}
 function gotCode(code){
   code=String(code||'').trim();if(!code)return;
-  if(_scanCont){contCode(code);return}
   const cb=_scanCb;stopScan();_scanCb=null;
   try{beep('ok')}catch(e){}
   if(cb)cb(code);
 }
-function scanBoxHTML(cont){
-  if(cont)return `<div class="box"><div class="mh"><h3>مسح متتابع — الكاميرا شغالة</h3><button class="icbtn" data-act="stopscan" aria-label="إغلاق">${ic('x')}</button></div>
-  <div id="scanview" style="min-height:200px;background:#000;border-radius:12px;overflow:hidden"></div>
-  <p class="mute c" id="scanmsg">جارٍ تشغيل الكاميرا الحية...</p>
-  <div id="scanlist"><p class="mute c" style="margin:8px 0">قرّب المنتجات واحد ورا التاني، وكل باركود هيتضاف لوحده.</p></div>
-  <div class="row" style="margin-top:8px"><input type="text" id="scanman" inputmode="numeric" placeholder="أو اكتب رقم الباركود" style="flex:1"><button type="button" class="btn line" data-act="scanmanok">إضافة</button></div>
-  <button type="button" class="btn dark block" style="margin-top:10px;min-height:54px" data-act="stopscan">${ic('check')} إنهاء المسح</button></div>`;
+function scanBoxHTML(){
   return `<div class="box"><div class="mh"><h3>مسح الباركود — مباشر</h3><button class="icbtn" data-act="stopscan" aria-label="إغلاق">${ic('x')}</button></div>
   <div id="scanview" style="min-height:220px;background:#000;border-radius:12px;overflow:hidden"></div>
   <p class="mute c" id="scanmsg">جارٍ تشغيل الكاميرا الحية...</p>
@@ -1099,7 +1081,7 @@ async function startNativeLive(view,myRun){
   if(!(md&&md.getUserMedia))return false;
   _stream=await md.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
   if(scanCam._run!==myRun){_stream.getTracks().forEach(t=>t.stop());return false}
-  view.innerHTML='<video id="vid" class="vid" playsinline muted autoplay style="width:100%;max-height:'+(_scanCont?'36':'50')+'vh;object-fit:cover;background:#000"></video>';
+  view.innerHTML='<video id="vid" class="vid" playsinline muted autoplay style="width:100%;max-height:50vh;object-fit:cover;background:#000"></video>';
   const v=$('#vid');
   v.muted=true;v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');v.srcObject=_stream;
   try{await v.play()}catch(e){}
@@ -1110,7 +1092,7 @@ async function startNativeLive(view,myRun){
     try{
       if(v.readyState>=2){
         const r=await det.detect(v);
-        if(r&&r.length&&r[0].rawValue){gotCode(r[0].rawValue);if(!_scan||!_scanCont)return}
+        if(r&&r.length&&r[0].rawValue){gotCode(r[0].rawValue);return}
       }
     }catch(e){}
     setTimeout(loop,180);
@@ -1118,10 +1100,9 @@ async function startNativeLive(view,myRun){
   loop();
   return true;
 }
-async function scanCam(cb,cont){
+async function scanCam(cb){
   _scanCb=cb;releaseCam();
-  _scanCont=cont?{fn:cb,map:{},order:[],total:0,last:'',lastT:0}:null;
-  const s=$('#scanbox');s.innerHTML=scanBoxHTML(!!_scanCont);s.classList.add('open');
+  const s=$('#scanbox');s.innerHTML=scanBoxHTML();s.classList.add('open');
   const myRun=Symbol();scanCam._run=myRun;
   const view=$('#scanview');
   scanMsg('جارٍ تشغيل الكاميرا الحية...');
@@ -1720,9 +1701,12 @@ function invoiceHTML(){
   if(!S.inv)S.inv=newInv();const I=S.inv;
   return `<div class="card"><h3>العميل</h3>
     <select id="csel" data-ch="csel"><option value="">عميل نقدي (بدون تسجيل)</option>${DB.customers.map(c=>`<option value="${c.id}" ${I.custSel===c.id?'selected':''}>${esc(c.name)}${c.phone?' - '+esc(c.phone):''}</option>`).join('')}<option value="new" ${I.custSel==='new'?'selected':''}>+ عميل جديد</option></select>
-    <div id="newc" style="display:${I.custSel==='new'?'block':'none'};margin-top:10px"><div class="row2"><input type="text" id="inv_cname" data-in="cname" placeholder="اسم العميل" value="${esc(I.cname)}"><input type="tel" id="inv_cphone" data-in="cphone" placeholder="رقم الهاتف" value="${esc(I.cphone)}"></div><button type="button" class="btn sm line" style="margin-top:8px;width:100%" data-act="pickcontact" data-t="inv">${ic('users')} اختيار الرقم من جهات الاتصال</button></div></div>
+    <div id="newc" style="display:${I.custSel==='new'?'block':'none'};margin-top:10px">
+      <div class="row2"><input type="text" data-in="cname" placeholder="اسم العميل" value="${esc(I.cname)}"><input type="tel" data-in="cphone" placeholder="رقم الهاتف" value="${esc(I.cphone)}"></div>
+      <button type="button" class="btn sm line" style="margin-top:8px" data-act="pickcontact">${ic('users')} من جهات الاتصال</button>
+    </div></div>
   <div class="card"><h3>إضافة منتج</h3>
-    <div class="row"><button class="btn dark" style="min-height:56px;font-size:19px;font-family:'Changa',sans-serif" data-act="pkopen">${ic('box')} اختر منتج</button><button class="icbtn" style="width:56px;height:56px" data-act="scani" aria-label="مسح بالكاميرا">${ic('camera')}</button><button class="icbtn" style="width:56px;height:56px;background:var(--y);color:#12202C" data-act="scanic" aria-label="مسح متتابع" title="مسح متتابع">${ic('barcode')}</button><button class="icbtn" style="width:56px;height:56px" data-act="scanii" aria-label="باركود من صورة">${ic('image')}</button></div>
+    <div class="row"><button class="btn dark" style="min-height:56px;font-size:19px;font-family:'Changa',sans-serif" data-act="pkopen">${ic('box')} اختر منتج</button><button class="icbtn" style="width:56px;height:56px" data-act="scani" aria-label="مسح بالكاميرا">${ic('camera')}</button><button class="icbtn" style="width:56px;height:56px" data-act="scanii" aria-label="باركود من صورة">${ic('image')}</button></div>
     <input type="text" id="isearch" data-in="isearch" placeholder="بحث سريع بالاسم أو اكتب الباركود" style="margin-top:10px">
     <div id="ires"></div>
     <details style="margin-top:10px"><summary class="b" style="cursor:pointer;padding:6px 0">منتج غير مسجل؟ أضفه هنا</summary>
@@ -1797,7 +1781,7 @@ function itemsHTML(){
 }
 function calc(){const I=S.inv;const sub=I.items.reduce((a,i)=>a+i.price*i.qty,0);const disc=Math.min(Math.max(+I.discount||0,0),sub);const total=sub-disc;const paid=I.paid===''?(I.method==='آجل'?0:total):Math.max(+I.paid||0,0);return{sub,disc,total,paid,rem:Math.max(total-paid,0)}}
 function updTotals(){const t=$('#tot');if(!t)return;const c=calc();const pd=$('#paid');if(pd)pd.placeholder=S.inv.method==='آجل'?'0 (آجل)':fmt(c.total);
-  t.innerHTML=`<div><span>المجموع</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div><div><span>المدفوع</span><b>${money(c.paid)}</b></div>${c.rem?`<div style="color:var(--bad)"><span>المتبقي على العميل</span><b>${money(c.rem)}</b></div>`:''}`
+  t.innerHTML=`<div><span>المجموع</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div><div><span>المدفوع</span><b>${money(c.paid)}</b></div>${c.rem?`<div style="color:var(--bad)"><span>المتبقي على العميل</span><b>${money(c.rem)}</b></div>`:''}${beforeDiscHTML(S.inv.items,c.sub)}`
   const cr=$('#credit_rem');if(cr)cr.textContent=c.rem>0?('المتبقي '+money(c.rem)+' سيُسجَّل في التقسيط تلقائيًا عند الحفظ'):'لا يوجد متبقي — لن يُنشأ قسط';
 }
 function askQty(name,defQty,cb,unit){
@@ -1819,7 +1803,7 @@ function addToInv(pid,silent,qty){
   const doAdd=(q)=>{
     q=normQty(q,u);
     const I=S.inv;const ex=I.items.find(x=>x.pid===pid);
-    if(ex)ex.qty=normQty((+ex.qty||0)+q,u);else I.items.push({pid,name:p.name,company:p.company||'',unit:u,price:sell(p),qty:q,cost:+p.cost||0});
+    if(ex)ex.qty=normQty((+ex.qty||0)+q,u);else I.items.push({pid,name:p.name,company:p.company||'',unit:u,price:sell(p),qty:q,cost:+p.cost||0,pOld:+p.pOld||0});
     if(hasStock(p)&&tot(p)<=0)toast('تنبيه: '+p.name+' نفدت كميته في المخزن','err');
     const el=$('#iitems');if(el)el.innerHTML=itemsHTML();updTotals();
     if(!silent){const s=$('#isearch');if(s)s.value='';const r=$('#ires');if(r)r.innerHTML=''}
@@ -1829,13 +1813,40 @@ function addToInv(pid,silent,qty){
   if(silent){doAdd(qtyStep(u));return}
   askQty(p.name+(p.company?' — '+p.company:''),qtyStep(u),doAdd,u);
 }
-function pkList(q,c){
+function pkList(q,c,co){
   q=(q||'').trim().toLowerCase();const I=(S.sec==='quicksale'?S.qs:S.sec==='quote'?S.qt:S.inv)||{items:[]};
-  const L=sortProducts(DB.products.filter(p=>(!c||(p.cat||'بدون قسم')===c)&&(!q||(p.name+' '+(p.barcode||'')+' '+(p.cat||'')+' '+(p.company||'')).toLowerCase().includes(q))));
+  co=(co===undefined||co===null)?'':String(co);
+  const L=sortProducts(DB.products.filter(p=>{
+    if(c&&(p.cat||'بدون قسم')!==c)return false;
+    if(co){
+      const pc=String(p.company||'').trim();
+      if(co==='__none__'){if(pc)return false}
+      else if(pc!==co)return false;
+    }
+    if(q&&!(p.name+' '+(p.barcode||'')+' '+(p.cat||'')+' '+(p.company||'')).toLowerCase().includes(q))return false;
+    return true;
+  }));
   if(!L.length)return `<div class="empty" style="margin:10px 0">${DB.products.length?'لا توجد نتائج.':'لا توجد منتجات مسجلة بعد.'}</div>`;
   return `<div class="res" style="max-height:none">${L.map(p=>{const n=(I.items.find(x=>x.pid===p.id)||{}).qty||0;
     const sub=[p.company,p.cat,hasStock(p)?'المتاح '+tot(p):'بدون كمية'].filter(Boolean).join(' · ');
     return `<button class="it" data-act="pkadd" data-id="${p.id}"><span><b>${esc(p.name)}</b><small>${esc(sub)}</small></span><span style="text-align:left"><b>${sell(p)?fmt(sell(p))+' ج.م':'-'}</b>${n?`<br><span class="pill ok">في ${S.sec==='quote'?'العرض':S.sec==='quicksale'?'البيع':'الفاتورة'} x${n}</span>`:''}</span></button>`}).join('')}</div>`;
+}
+function pkFiltersHTML(qIn,cCh,coCh){
+  const cats=[...new Set(DB.products.map(p=>p.cat||'بدون قسم'))].sort((a,b)=>a.localeCompare(b,'ar'));
+  const cos=allCompanies();
+  return `<div class="row2" style="gap:8px">
+    <input type="text" id="pk_q" data-in="${qIn}" placeholder="بحث بالاسم أو الباركود">
+  </div>
+  <div class="row2" style="margin-top:8px;gap:8px">
+    <select id="pk_c" data-ch="${cCh}" style="margin:0"><option value="">كل الأقسام</option>${cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+    <select id="pk_co" data-ch="${coCh}" style="margin:0"><option value="">كل الشركات</option>${cos.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}<option value="__none__">بدون شركة</option></select>
+  </div>`;
+}
+function pkRefreshList(qIn){
+  const q=($('#pk_q')&&$('#pk_q').value)||'';
+  const c=($('#pk_c')&&$('#pk_c').value)||'';
+  const co=($('#pk_co')&&$('#pk_co').value)||'';
+  const l=$('#pk_l');if(l)l.innerHTML=pkList(q,c,co);
 }
 function onBarcode(code){
   const p=DB.products.find(x=>x.barcode&&x.barcode===code);
@@ -2146,36 +2157,96 @@ function custForm(id){
   <label class="f">العنوان <small>(اختياري)</small><input type="text" id="c_addr" value="${esc(c?c.address:'')}"></label><label class="f">ملاحظات <small>(اختياري)</small><textarea id="c_notes">${esc(c?c.notes:'')}</textarea></label>
   <button class="btn block" data-act="savec" data-id="${c?c.id:''}">${ic('check')} حفظ</button>`);
 }
-async function pickContact(target){
+function normalizeContactTel(raw){
+  let tel=String(raw||'').replace(/[^0-9+]/g,'');
+  if(tel.startsWith('+20'))tel='0'+tel.slice(3);
+  else if(tel.startsWith('20')&&tel.length>=12)tel='0'+tel.slice(2);
+  return tel;
+}
+function contactNameFrom(ct){
+  if(!ct||!ct.name)return '';
+  const n=ct.name;
+  if(typeof n==='string')return n.trim();
+  if(Array.isArray(n)){
+    const first=n[0];
+    if(typeof first==='string')return first.trim();
+    if(first&&typeof first==='object'){
+      return [first.givenName,first.familyName,first.displayName,first.name].filter(Boolean).join(' ').trim()||String(first);
+    }
+  }
+  if(typeof n==='object')return [n.givenName,n.familyName,n.displayName,n.name].filter(Boolean).join(' ').trim();
+  return String(n);
+}
+function contactTelFrom(ct){
+  if(!ct||!ct.tel)return '';
+  const t=ct.tel;
+  if(typeof t==='string')return normalizeContactTel(t);
+  if(Array.isArray(t)&&t.length){
+    const first=t[0];
+    if(typeof first==='string')return normalizeContactTel(first);
+    if(first&&typeof first==='object')return normalizeContactTel(first.value||first.number||first.tel||'');
+  }
+  return '';
+}
+function fillContactFields(name,tel){
+  const nameIds=['c_name','qt_name','gqt_name'];
+  const phoneIds=['c_phone','qt_phone','gqt_phone'];
+  let filled=false;
+  nameIds.forEach(id=>{
+    const el=$(id.startsWith('#')?id:'#'+id);
+    if(el&&name){if(!el.value.trim())el.value=name;filled=true;
+      if(el.dataset&&el.dataset.in==='qtname'&&S.qt)S.qt.cname=el.value;
+      if(el.dataset&&el.dataset.in==='gqtname'&&S.gqt)S.gqt.cname=el.value;
+      if(el.dataset&&el.dataset.in==='cname'&&S.inv)S.inv.cname=el.value;
+    }
+  });
+  // حقول الهاتف بالـ id أو data-in
+  phoneIds.forEach(id=>{
+    const el=$('#'+id);
+    if(el&&tel){el.value=tel;filled=true;
+      if(el.dataset&&el.dataset.in==='qtphone'&&S.qt)S.qt.cphone=tel;
+      if(el.dataset&&el.dataset.in==='gqtphone'&&S.gqt)S.gqt.cphone=tel;
+      if(el.dataset&&el.dataset.in==='cphone'&&S.inv)S.inv.cphone=tel;
+    }
+  });
+  document.querySelectorAll('input[data-in="cphone"],input[data-in="qtphone"],input[data-in="gqtphone"]').forEach(el=>{
+    if(tel){el.value=tel;filled=true;
+      if(el.dataset.in==='cphone'&&S.inv)S.inv.cphone=tel;
+      if(el.dataset.in==='qtphone'&&S.qt)S.qt.cphone=tel;
+      if(el.dataset.in==='gqtphone'&&S.gqt)S.gqt.cphone=tel;
+    }
+  });
+  document.querySelectorAll('input[data-in="cname"],input[data-in="qtname"],input[data-in="gqtname"]').forEach(el=>{
+    if(name&&!el.value.trim()){el.value=name;filled=true;
+      if(el.dataset.in==='cname'&&S.inv)S.inv.cname=name;
+      if(el.dataset.in==='qtname'&&S.qt)S.qt.cname=name;
+      if(el.dataset.in==='gqtname'&&S.gqt)S.gqt.cname=name;
+    }
+  });
+  return filled;
+}
+async function pickContact(){
   try{
-    if(!(navigator.contacts&&navigator.contacts.select)){
-      toast('جهازك أو المتصفح لا يدعم اختيار جهات الاتصال. اكتب الرقم يدويًا.','err');
+    if(typeof window==='undefined'||!window.isSecureContext){
+      toast('اختيار جهات الاتصال يحتاج فتح الصفحة عبر HTTPS أو من التطبيق.','err');
+      return;
+    }
+    if(!(navigator.contacts&&typeof navigator.contacts.select==='function')){
+      toast('المتصفح لا يدعم جهات الاتصال (يعمل عادة على كروم أندرويد). اكتب الرقم يدويًا.','err');
       return;
     }
     const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});
     if(!contacts||!contacts.length)return;
     const ct=contacts[0];
-    const name=(ct.name&&(Array.isArray(ct.name)?ct.name[0]:ct.name))||'';
-    let tel='';
-    if(ct.tel&&ct.tel.length){
-      tel=String(ct.tel[0]||'').replace(/[^0-9+]/g,'');
-      // تطبيع أرقام مصر الشائعة
-      if(tel.startsWith('+20'))tel='0'+tel.slice(3);
-      else if(tel.startsWith('20')&&tel.length>=12)tel='0'+tel.slice(2);
-    }
-    const T={
-      inv:{n:'#inv_cname',p:'#inv_cphone',st:()=>S.inv,kn:'cname',kp:'cphone'},
-      qt:{n:'#qt_name',p:'#qt_phone',st:()=>S.qt,kn:'cname',kp:'cphone'},
-      gqt:{n:'#gqt_name',p:'#gqt_phone',st:()=>S.gqt,kn:'cname',kp:'cphone'}
-    }[target]||{n:'#c_name',p:'#c_phone'};
-    const n=$(T.n),p=$(T.p);
-    const st=T.st?T.st():null;
-    if(n&&name&&!n.value.trim()){n.value=String(name);if(st)st[T.kn]=String(name)}
-    if(p&&tel){p.value=tel;if(st)st[T.kp]=tel}
-    toast('تم اختيار جهة الاتصال','ok');
+    const name=contactNameFrom(ct);
+    const tel=contactTelFrom(ct);
+    if(!name&&!tel){toast('جهة الاتصال بدون اسم أو رقم ظاهر','err');return}
+    fillContactFields(name,tel);
+    toast(tel?('تم: '+(name?name+' — ':'')+tel):('تم اختيار: '+name),'ok');
   }catch(e){
     if(e&&(e.name==='AbortError'||e.name==='NotAllowedError'))return;
-    toast('تعذر فتح جهات الاتصال. اكتب الرقم يدويًا.','err');
+    console&&console.warn&&console.warn(e);
+    toast('تعذر فتح جهات الاتصال. تأكد من الإذن أو اكتب الرقم يدويًا.','err');
   }
 }
 
@@ -2367,7 +2438,7 @@ function quickSaleHTML(){
   return `<div class="alert" style="margin-top:0">${ic('bolt')}<div><b>بيع دون فاتورة</b><br><span>يُخصم من المخزن ويُحسب ضمن المبيعات والتقارير دون إصدار رقم فاتورة للعميل.</span></div></div>
   <div class="card"><h3>إضافة منتج</h3>
     <div class="row"><button class="btn dark" style="min-height:56px;font-size:19px;font-family:'Changa',sans-serif" data-act="qspkopen">${ic('box')} اختر منتج</button>
-    <button class="icbtn" style="width:56px;height:56px" data-act="qsscan" aria-label="مسح بالكاميرا">${ic('camera')}</button><button class="icbtn" style="width:56px;height:56px;background:var(--y);color:#12202C" data-act="qsscanc" aria-label="مسح متتابع" title="مسح متتابع">${ic('barcode')}</button></div>
+    <button class="icbtn" style="width:56px;height:56px" data-act="qsscan" aria-label="مسح بالكاميرا">${ic('camera')}</button></div>
     <input type="text" id="qs_search" data-in="qssearch" placeholder="بحث سريع بالاسم أو الباركود" style="margin-top:10px">
     <div id="qs_res"></div>
     <details style="margin-top:10px"><summary class="b" style="cursor:pointer;padding:6px 0">منتج غير مسجل؟</summary>
@@ -2497,11 +2568,14 @@ function quoteHTML(){
   return back+`<div class="alert" style="margin-top:0">${ic('tag')}<div><b>عرض سعر عادي</b><br><span>لا يخصم أي كمية من المخزن ولا يُحسب ضمن المبيعات أو الفواتير.</span></div></div>
   <div class="card" style="margin-top:12px"><h3>العميل</h3>
     <select data-ch="qtcsel"><option value="">عميل جديد — اكتب الاسم والهاتف</option>${DB.customers.map(c=>`<option value="${c.id}">${esc(c.name)}${c.phone?' - '+esc(c.phone):''}</option>`).join('')}</select>
-    <div class="row2" style="margin-top:10px"><input type="text" id="qt_name" data-in="qtname" placeholder="اسم العميل" value="${esc(I.cname)}"><input type="tel" id="qt_phone" data-in="qtphone" placeholder="رقم الهاتف" value="${esc(I.cphone)}"></div><button type="button" class="btn sm line" style="margin-top:8px;width:100%" data-act="pickcontact" data-t="qt">${ic('users')} اختيار الرقم من جهات الاتصال</button>
-    <p class="mute" style="margin:8px 0 0;font-size:13px">لو كتبت اسمًا جديدًا يُضاف تلقائيًا لقائمة العملاء عند حفظ العرض، أو اضغط الزر بالأسفل فورًا.</p>
-    <button class="btn sm line" style="margin-top:8px" data-act="qtaddcust">${ic('users')} إضافة العميل للقائمة الآن</button></div>
+    <div class="row2" style="margin-top:10px"><input type="text" id="qt_name" data-in="qtname" placeholder="اسم العميل" value="${esc(I.cname)}"><input type="tel" id="qt_phone" data-in="qtphone" placeholder="رقم الهاتف" value="${esc(I.cphone)}"></div>
+    <div class="row2" style="margin-top:8px;gap:8px">
+      <button type="button" class="btn sm line" data-act="pickcontact">${ic('users')} من جهات الاتصال</button>
+      <button class="btn sm line" data-act="qtaddcust">${ic('users')} إضافة العميل للقائمة الآن</button>
+    </div>
+    <p class="mute" style="margin:8px 0 0;font-size:13px">لو كتبت اسمًا جديدًا يُضاف تلقائيًا لقائمة العملاء عند حفظ العرض، أو اضغط زر الإضافة فورًا.</p></div>
   <div class="card"><h3>إضافة منتج</h3>
-    <div class="row"><button class="btn dark" style="min-height:56px;font-size:19px;font-family:'Changa',sans-serif" data-act="pkopen">${ic('box')} اختر منتج</button><button class="icbtn" style="width:56px;height:56px" data-act="qtscan" aria-label="مسح بالكاميرا">${ic('camera')}</button><button class="icbtn" style="width:56px;height:56px;background:var(--y);color:#12202C" data-act="qtscanc" aria-label="مسح متتابع" title="مسح متتابع">${ic('barcode')}</button></div>
+    <div class="row"><button class="btn dark" style="min-height:56px;font-size:19px;font-family:'Changa',sans-serif" data-act="pkopen">${ic('box')} اختر منتج</button><button class="icbtn" style="width:56px;height:56px" data-act="qtscan" aria-label="مسح بالكاميرا">${ic('camera')}</button></div>
     <input type="text" id="qt_search" data-in="qtsearch" placeholder="بحث سريع بالاسم أو اكتب الباركود" style="margin-top:10px">
     <div id="qt_res"></div>
     <details style="margin-top:10px"><summary class="b" style="cursor:pointer;padding:6px 0">منتج غير مسجل؟ أضفه هنا</summary>
@@ -2556,14 +2630,14 @@ function qtItemsHTML(){
 }
 function qtCalc(){const I=S.qt;const sub=I.items.reduce((a,i)=>a+i.price*i.qty,0);const disc=Math.min(Math.max(+I.discount||0,0),sub);return{sub,disc,total:sub-disc}}
 function qtUpdTotals(){const t=$('#qt_tot');if(!t||!S.qt)return;const c=qtCalc();
-  t.innerHTML=`<div><span>المجموع</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div>`}
+  t.innerHTML=`<div><span>المجموع</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div>${beforeDiscHTML(S.qt.items,c.sub)}`}
 function qtAdd(pid,silent,qty){
   const p=prod(pid);if(!p)return;
   const u=unitOf(p);
   const doAdd=(q)=>{
     q=normQty(q,u);
     const I=S.qt;const ex=I.items.find(x=>x.pid===pid);
-    if(ex)ex.qty=normQty((+ex.qty||0)+q,u);else I.items.push({pid,name:p.name,company:p.company||'',unit:u,price:sell(p),qty:q});
+    if(ex)ex.qty=normQty((+ex.qty||0)+q,u);else I.items.push({pid,name:p.name,company:p.company||'',unit:u,price:sell(p),qty:q,pOld:+p.pOld||0});
     const el=$('#qt_items');if(el)el.innerHTML=qtItemsHTML();qtUpdTotals();
     if(!silent){const sr=$('#qt_search');if(sr)sr.value='';const r=$('#qt_res');if(r)r.innerHTML=''}
     toast('أضيف: '+p.name+' ×'+q+' '+u,'ok');
@@ -2651,12 +2725,13 @@ function gqtHTML(){
   </div>
   <div class="card"><h3>العميل</h3>
     <select data-ch="gqtcsel"><option value="">اكتب الاسم يدويًا / عميل جديد</option>${DB.customers.map(c=>`<option value="${c.id}" ${G.cid===c.id?'selected':''}>${esc(c.name)}${c.phone?' - '+esc(c.phone):''}</option>`).join('')}</select>
-    <div class="row2" style="margin-top:10px" id="gqt_newc"><input type="text" id="gqt_name" data-in="gqtname" placeholder="اسم العميل" value="${esc(G.cname)}"><input type="tel" id="gqt_phone" data-in="gqtphone" placeholder="رقم الهاتف" value="${esc(G.cphone)}"></div><button type="button" class="btn sm line" style="margin-top:8px;width:100%" data-act="pickcontact" data-t="gqt">${ic('users')} اختيار الرقم من جهات الاتصال</button>
+    <div class="row2" style="margin-top:10px" id="gqt_newc"><input type="text" id="gqt_name" data-in="gqtname" placeholder="اسم العميل" value="${esc(G.cname)}"><input type="tel" id="gqt_phone" data-in="gqtphone" placeholder="رقم الهاتف" value="${esc(G.cphone)}"></div>
+    <button type="button" class="btn sm line" style="margin-top:8px" data-act="pickcontact">${ic('users')} من جهات الاتصال</button>
     <p class="mute" style="margin:8px 0 0;font-size:13px">إن اخترت عميلًا من القائمة يُستخدم مباشرة. إن كتبت اسمًا جديدًا يُضاف لقائمة العملاء عند الحفظ.</p></div>
   <div class="card"><h3>2) إضافة منتج</h3>
     ${!G.companies.length?'<p class="mute" style="margin:0">اختر الشركات أولًا من الأعلى.</p>':`
     <div class="row"><button class="btn dark" style="min-height:56px;font-size:19px;font-family:'Changa',sans-serif" data-act="gqtpk">${ic('box')} اختر منتج موجود</button>
-    <button class="icbtn" style="width:56px;height:56px" data-act="gqtscan" aria-label="مسح">${ic('camera')}</button><button class="icbtn" style="width:56px;height:56px;background:var(--y);color:#12202C" data-act="gqtscanc" aria-label="مسح متتابع" title="مسح متتابع">${ic('barcode')}</button></div>
+    <button class="icbtn" style="width:56px;height:56px" data-act="gqtscan" aria-label="مسح">${ic('camera')}</button></div>
     <input type="text" id="gqt_search" data-in="gqtsearch" placeholder="بحث سريع بالاسم أو الباركود" style="margin-top:10px">
     <div id="gqt_res"></div>
     <details style="margin-top:10px"><summary class="b" style="cursor:pointer;padding:6px 0">منتج غير مسجل؟ أضفه هنا</summary>
@@ -2703,7 +2778,9 @@ function gqtCompanyTotals(){
 function gqtTotalsHTML(){
   const G=S.gqt;if(!G||!G.companies.length||!G.items.length)return '';
   const t=gqtCompanyTotals();
-  return `<div class="tots">${G.companies.map(c=>`<div><span>إجمالي ${esc(c)}</span><b>${money(t[c])}</b></div>`).join('')}</div>`;
+  const before=sumBeforeDisc(G.items);
+  return `<div class="tots">${G.companies.map(c=>`<div><span>إجمالي ${esc(c)}</span><b>${money(t[c])}</b></div>`).join('')}
+  ${before>0?`<div style="border-top:1px dashed var(--line);margin-top:8px;padding-top:8px"><span>إجمالي قبل الخصم <small class="mute">(مرجع — لا يظهر في الطباعة)</small></span><b>${money(before)}</b></div>`:''}</div>`;
 }
 function gqtUpd(){
   const el=$('#gqt_items');if(el)el.innerHTML=gqtItemsHTML();
@@ -2713,13 +2790,9 @@ function gqtAddItem(name,qty,pid,basePrice){
   const G=S.gqt;if(!G||!G.companies.length){toast('اختر الشركات أولًا','err');return}
   const prices={};
   const p=pid?prod(pid):null;
-  const def=basePrice!=null?+basePrice:(p?sell(p):0);
-  G.companies.forEach(c=>{
-    // إذا كان للمنتج شركة محددة تطابق أحد الأعمدة استخدم سعره، وإلا نفس السعر الافتراضي لكل الشركات
-    if(p&&p.company&&p.company===c) prices[c]=sell(p);
-    else prices[c]=def;
-  });
-  // لو في منتجات أخرى بنفس الاسم ولها شركات مختلفة في المخزون — عبّئ أسعارها
+  // الشركة اللي مفيش ليها سعر للمنتج تبقى صفر (مش نفس سعر شركة تانية)
+  G.companies.forEach(c=>{prices[c]=0});
+  // عبّئ من منتجات بنفس الاسم ولها شركة من المختارة
   if(name){
     DB.products.forEach(op=>{
       if(op.name===name&&op.company&&G.companies.includes(op.company)){
@@ -2727,7 +2800,16 @@ function gqtAddItem(name,qty,pid,basePrice){
       }
     });
   }
-  G.items.push({pid:pid||null,name,unit:(pid&&prod(pid)?unitOf(prod(pid)):'قطعة'),qty:+qty||1,prices});
+  // لو المنتج المختار نفسه له شركة مطابقة ولم تُملأ بعد
+  if(p&&p.company&&G.companies.includes(p.company)&&!(+prices[p.company]>0)){
+    prices[p.company]=sell(p);
+  }
+  // سعر يدوي اختياري يُطبَّق فقط على الشركات اللي لسه صفر
+  if(basePrice!=null&&+basePrice>0){
+    const bp=+basePrice;
+    G.companies.forEach(c=>{if(!(+prices[c]>0)) prices[c]=bp});
+  }
+  G.items.push({pid:pid||null,name,unit:(pid&&prod(pid)?unitOf(prod(pid)):'قطعة'),qty:+qty||1,prices,pOld:p?(+p.pOld||0):0});
   gqtUpd();toast('تمت إضافة: '+name+(qty>1?' ×'+qty:''),'ok');
 }
 function gqtAddProd(pid){
@@ -2929,10 +3011,6 @@ function browseFilter(q){
 const ACT={
 close:closeModal,
 stopscan:stopScan,
-scanic(){scanCam(c=>contResult(c,p=>addToInv(p.id,true)),true)},
-qsscanc(){scanCam(c=>contResult(c,p=>qsAdd(p.id,true)),true)},
-qtscanc(){scanCam(c=>contResult(c,p=>qtAdd(p.id,true)),true)},
-gqtscanc(){if(!(S.gqt&&S.gqt.companies.length)){toast('اختر الشركات أولًا','err');return}scanCam(c=>contResult(c,p=>gqtAddQuiet(p)),true)},
 scancap(){
   releaseCam();
   const v=$('#scanview');if(v)v.innerHTML='<p class="mute c" style="padding:24px 8px">التقط صورة واضحة للباركود</p>';
@@ -2948,7 +3026,7 @@ scangal(){
   try{f.value=''}catch(e){}
   try{f.click()}catch(e){toast('تعذر فتح المعرض','err')}
 },
-scanmanok(){const i=$('#scanman');const v=i?i.value.trim():'';if(!v){toast('اكتب رقم الباركود','err');return}if(_scanCont){if(_scanCont)_scanCont.lastT=0;i.value='';gotCode(v);return}gotCode(v)},
+scanmanok(){const i=$('#scanman');const v=i?i.value.trim():'';if(!v){toast('اكتب رقم الباركود','err');return}gotCode(v)},
 gotop(d,e){if(e&&e.preventDefault)e.preventDefault();const m=$('#products');if(m)m.scrollIntoView({behavior:'smooth'})},
 navback(){
   if($('#modal')&&$('#modal').classList.contains('open')){closeModal();return}
@@ -2970,7 +3048,7 @@ navback(){
 
 navhome(){closeModal();S.view='shop';S.sec=null;S.browse=null;S.hist=['shop'];render();window.scrollTo(0,0)},
 navcart(){closeModal();if(S.view==='cart'){window.scrollTo(0,0);return}cartSheet()},
-addtocart(d){const p=pub().products.find(x=>x.id===d.id)||(prod(d.id)?toPub(prod(d.id)):null);if(!p){toast('المنتج غير متاح','err');return}addToCart(p,1);closeModal()},
+addtocart(d){const p=pub().products.find(x=>x.id===d.id)||(prod(d.id)?toPub(prod(d.id)):null);if(!p){toast('المنتج غير متاح','err');return}addToCart(p,1)},
 cartrm(d){S.cart.splice(+d.i,1);updateCartBadge();renderCart()},
 cartinc(d){const it=S.cart[+d.i];if(!it)return;it.qty=normQty((+it.qty||0)+qtyStep(it.unit),it.unit);renderCart()},
 cartdec(d){const it=S.cart[+d.i];if(!it)return;const st=qtyStep(it.unit);const q=(+it.qty||0)-st;if(q<st){S.cart.splice(+d.i,1);updateCartBadge()}else it.qty=normQty(q,it.unit);renderCart()},
@@ -2993,7 +3071,7 @@ storeview(d){S.storeView=d.m||'all';refreshSec()},
 lowpdf(d,e){const btn=e&&e.target&&e.target.closest('button');downloadLowPDF(btn)},
 lowprint(){printLow()},
 lowpreview(){previewLow()},
-pickcontact(d){pickContact(d&&d.t)},
+pickcontact(){pickContact()},
 
 theme(){const n=isDark()?'light':'dark';document.documentElement.dataset.theme=n;try{localStorage.setItem('manar_theme',n)}catch(e){}updUtil()},
 mute(){const m=!isMuted();try{localStorage.setItem('manar_mute',m?'1':'0')}catch(e){}updUtil();if(!m)beep('ok')},
@@ -3044,13 +3122,12 @@ addu(){
 },
 addres(d){addToInv(d.id)},
 pkopen(){
-  const cats=[...new Set(DB.products.map(p=>p.cat||'بدون قسم'))];
   openModal(`<div class="mh"><h3>اختر منتج</h3><button class="icbtn" data-act="close" aria-label="إغلاق">${ic('x')}</button></div><div class="pk">
-  <div class="row2"><input type="text" id="pk_q" data-in="pksearch" placeholder="بحث بالاسم أو الباركود"><select id="pk_c" data-ch="pkcat" style="margin-top:4px"><option value="">كل الأقسام</option>${cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
+  ${pkFiltersHTML('pksearch','pkcat','pkco')}
   <label style="display:flex;gap:8px;align-items:center;margin:8px 2px;font-size:14px"><input type="checkbox" data-ch="pkkeep" style="width:20px;height:20px" ${S.pkKeep?'checked':''}> إبقاء القائمة مفتوحة لإضافة أكثر من منتج</label>
-  <div id="pk_l">${pkList('','')}</div></div>`,true)},
+  <div id="pk_l">${pkList('','','')}</div></div>`,true)},
 pkadd(d){
-  const after=()=>{if(S.pkKeep){const l=$('#pk_l');if(l)l.innerHTML=pkList(($('#pk_q')&&$('#pk_q').value)||'',($('#pk_c')&&$('#pk_c').value)||'')}else closeModal()};
+  const after=()=>{if(S.pkKeep)pkRefreshList();else closeModal()};
   const p=prod(d.id);if(!p)return;
   if(S.sec==='quote'&&S.qtMode==='group'){closeModal();gqtAddProd(d.id);return}
   askQty(p.name+(p.company?' — '+p.company:''),qtyStep(unitOf(p)),(q)=>{
@@ -3147,11 +3224,10 @@ rmcoimg(d){if(DB.companyImgs)delete DB.companyImgs[d.n];if(save())refreshSec()},
 delco(d){ask('حذف الشركة «'+d.n+'»؟','حذف',()=>{DB.companies=(DB.companies||[]).filter(x=>x!==d.n);if(DB.companyImgs)delete DB.companyImgs[d.n];save();refreshSec()},true)},
 /* quicksale */
 qspkopen(){
-  const cats=[...new Set(DB.products.map(p=>p.cat||'بدون قسم'))];
   openModal(`<div class="mh"><h3>اختر منتج</h3><button class="icbtn" data-act="close" aria-label="إغلاق">${ic('x')}</button></div><div class="pk">
-  <div class="row2"><input type="text" id="pk_q" data-in="qspksearch" placeholder="بحث بالاسم أو الباركود"><select id="pk_c" data-ch="qspkcat" style="margin-top:4px"><option value="">كل الأقسام</option>${cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
+  ${pkFiltersHTML('qspksearch','qspkcat','qspkco')}
   <label style="display:flex;gap:8px;align-items:center;margin:8px 2px;font-size:14px"><input type="checkbox" data-ch="pkkeep" style="width:20px;height:20px" ${S.pkKeep?'checked':''}> إبقاء القائمة مفتوحة</label>
-  <div id="pk_l">${pkList('','')}</div></div>`,true);
+  <div id="pk_l">${pkList('','','')}</div></div>`,true);
   // reuse pkadd but for qs - override via data
 },
 qsaddu(){
@@ -3202,7 +3278,7 @@ qtaddu(d){
     DB.products.push(p);pid=p.id;
     if(!save())return;
   }
-  S.qt.items.push({pid,name,company,cat,unit,warranty,price,qty});
+  S.qt.items.push({pid,name,company,cat,unit,warranty,price,qty,pOld:0});
   $('#qt_u_name').value='';if($('#qt_u_company'))$('#qt_u_company').value='';if($('#qt_u_company_new')){$('#qt_u_company_new').value='';$('#qt_u_company_new').style.display='none'}
   if($('#qt_u_cat'))$('#qt_u_cat').value='';if($('#qt_u_cat_new')){$('#qt_u_cat_new').value='';$('#qt_u_cat_new').style.display='none'}
   $('#qt_u_price').value='';$('#qt_u_qty').value=1;if($('#qt_u_warranty'))$('#qt_u_warranty').value='';
@@ -3245,10 +3321,9 @@ qtsaveprods(){
 },
 gqtpk(){
   if(!(S.gqt&&S.gqt.companies.length)){toast('اختر الشركات أولًا','err');return}
-  const cats=[...new Set(DB.products.map(p=>p.cat||'بدون قسم'))];
   openModal(`<div class="mh"><h3>اختر منتج</h3><button class="icbtn" data-act="close" aria-label="إغلاق">${ic('x')}</button></div><div class="pk">
-  <div class="row2"><input type="text" id="pk_q" data-in="gqtpksearch" placeholder="بحث بالاسم أو الباركود"><select id="pk_c" data-ch="gqtpkcat" style="margin-top:4px"><option value="">كل الأقسام</option>${cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
-  <div id="pk_l">${pkList('','')}</div></div>`,true);
+  ${pkFiltersHTML('gqtpksearch','gqtpkcat','gqtpkco')}
+  <div id="pk_l">${pkList('','','')}</div></div>`,true);
 },
 gqtaddres(d){closeModal();gqtAddProd(d.id)},
 gqtaddu(){
@@ -3384,7 +3459,7 @@ document.addEventListener('input',e=>{
     case'instdate':I.instDate=t.value;break;
     case'itprice':{const it=I.items[+t.dataset.i];it.price=+t.value||0;$('#lt'+t.dataset.i).textContent=fmt(it.price*it.qty);updTotals();break}
     case'itqty':{const it=I.items[+t.dataset.i];const u=it.unit||'قطعة';it.qty=normQty(+t.value||qtyStep(u),u);t.value=it.qty;$('#lt'+t.dataset.i).textContent=fmt(it.price*it.qty);updTotals();break}
-    case'pksearch':$('#pk_l').innerHTML=pkList(t.value,$('#pk_c').value);break;
+    case'pksearch':pkRefreshList();break;
     case'isearch':{
       const q=t.value.trim().toLowerCase();const r=$('#ires');if(!q){r.innerHTML='';break}
       const L=sortProducts(DB.products.filter(p=>(p.name+' '+(p.barcode||'')+' '+(p.company||'')).toLowerCase().includes(q))).slice(0,12);
@@ -3408,7 +3483,7 @@ document.addEventListener('input',e=>{
       if(L.length===1&&L[0].barcode&&L[0].barcode===t.value.trim()){gqtAddProd(L[0].id);t.value='';r.innerHTML='';break}
       r.innerHTML=L.length?`<div class="res">${L.map(p=>`<button data-act="gqtaddres" data-id="${p.id}"><span>${esc(p.name)}${p.company?' <small class="mute">'+esc(p.company)+'</small>':''}</span><b>${fmt(sell(p))} ج.م</b></button>`).join('')}</div>`:'<p class="mute" style="margin:8px 2px 0">لا يوجد منتج بهذا الاسم.</p>';
       break}
-    case'gqtpksearch':$('#pk_l').innerHTML=pkList(t.value,$('#pk_c').value);break;
+    case'gqtpksearch':pkRefreshList();break;
     case'qtitprice':{const it=S.qt.items[+t.dataset.i];it.price=+t.value||0;$('#qtlt'+t.dataset.i).textContent=fmt(it.price*it.qty);qtUpdTotals();break}
     case'qtitqty':{const it=S.qt.items[+t.dataset.i];const u=it.unit||'قطعة';it.qty=normQty(+t.value||qtyStep(u),u);t.value=it.qty;$('#qtlt'+t.dataset.i).textContent=fmt(it.price*it.qty);qtUpdTotals();break}
     case'qtsearch':{
@@ -3427,7 +3502,7 @@ document.addEventListener('input',e=>{
     case'qspaid':S.qs.paid=t.value;qsUpdTotals();break;
     case'qsitprice':{const it=S.qs.items[+t.dataset.i];it.price=+t.value||0;$('#qslt'+t.dataset.i).textContent=fmt(it.price*it.qty);qsUpdTotals();break}
     case'qsitqty':{const it=S.qs.items[+t.dataset.i];const u=it.unit||'قطعة';it.qty=normQty(+t.value||qtyStep(u),u);t.value=it.qty;$('#qslt'+t.dataset.i).textContent=fmt(it.price*it.qty);qsUpdTotals();break}
-    case'qspksearch':$('#pk_l').innerHTML=pkList(t.value,$('#pk_c').value);break;
+    case'qspksearch':pkRefreshList();break;
   }
 });
 document.addEventListener('change',async e=>{
@@ -3467,9 +3542,9 @@ document.addEventListener('change',async e=>{
       S.gqt.cid='';S.gqt.custSel='';
     }
   }
-  else if(k==='gqtpkcat')$('#pk_l').innerHTML=pkList($('#pk_q').value,t.value);
+  else if(k==='gqtpkcat'||k==='gqtpkco')pkRefreshList();
   else if(k==='icsel')$('#i_new').style.display=t.value==='new'?'grid':'none';
-  else if(k==='pkcat'||k==='qspkcat')$('#pk_l').innerHTML=pkList($('#pk_q').value,t.value);
+  else if(k==='pkcat'||k==='qspkcat'||k==='pkco'||k==='qspkco')pkRefreshList();
   else if(k==='pkkeep')S.pkKeep=t.checked;
   else if(k==='pcompany'){const n=$('#p_company_new');if(n)n.style.display=t.value==='__new__'?'block':'none'}
   else if(k==='punit'){const n=$('#p_unit_new');if(n)n.style.display=t.value==='__new__'?'block':'none'}
