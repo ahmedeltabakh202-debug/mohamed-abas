@@ -590,12 +590,32 @@ let AC=null;
 function beep(kind){
   if(isMuted())return;
   try{
-    AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
-    const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
-    if(kind==='ok'){o.type='sine';o.frequency.setValueAtTime(660,t);o.frequency.setValueAtTime(990,t+.09);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.09,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.24);o.stop(t+.26)}
-    else if(kind==='err'){o.type='square';o.frequency.setValueAtTime(220,t);o.frequency.setValueAtTime(160,t+.12);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.28);o.stop(t+.3)}
-    else{o.type='sine';o.frequency.setValueAtTime(540,t);g.gain.setValueAtTime(.001,t);g.gain.exponentialRampToValueAtTime(.07,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.07);o.stop(t+.09)}
-    o.connect(g);g.connect(AC.destination);o.start(t);
+    AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended')AC.resume();
+    const t=AC.currentTime;
+    const tone=(type,freq,dur,vol,delay)=>{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type=type||'sine';
+      const f0=Array.isArray(freq)?freq[0]:freq;
+      o.frequency.setValueAtTime(f0,t+(delay||0));
+      if(Array.isArray(freq)&&freq.length>1){
+        for(let i=1;i<freq.length;i++)o.frequency.setValueAtTime(freq[i],t+(delay||0)+i*(dur/(freq.length)));
+      }
+      g.gain.setValueAtTime(.0001,t+(delay||0));
+      g.gain.exponentialRampToValueAtTime(vol||.08,t+(delay||0)+.012);
+      g.gain.exponentialRampToValueAtTime(.0001,t+(delay||0)+dur);
+      o.connect(g);g.connect(AC.destination);
+      o.start(t+(delay||0));o.stop(t+(delay||0)+dur+.02);
+    };
+    kind=kind||'click';
+    if(kind==='ok'){tone('sine',[880,1175],.22,.1,0)}
+    else if(kind==='err'){tone('square',[280,180],.28,.07,0)}
+    else if(kind==='cart'){tone('triangle',[523,659,784],.28,.11,0)}
+    else if(kind==='scan'||kind==='barcode'){tone('sine',[1200,1600,1200],.18,.12,0)}
+    else if(kind==='invoice'||kind==='save'){tone('sine',[523,659,784,1047],.42,.11,0)}
+    else if(kind==='quote'||kind==='price'){tone('triangle',[440,554,659],.32,.1,0)}
+    else if(kind==='success'){tone('sine',[660,880,1100],.35,.1,0)}
+    else{tone('sine',620,.06,.06,0)} /* click */
   }catch(e){}
 }
 const utilBtns=cls=>`<button class="${cls}" data-act="theme" aria-label="تبديل الوضع الليلي والنهاري" title="ليلي / نهاري">${ic(isDark()?'sun':'moon')}</button><button class="${cls}" data-act="mute" aria-label="كتم الصوت" title="الصوت">${ic(isMuted()?'volx':'vol')}</button>`;
@@ -714,7 +734,9 @@ function addToCart(p,qty){
   const ex=S.cart.find(x=>x.pid===p.id);
   if(ex)ex.qty=normQty((+ex.qty||0)+qty,p.unit||'قطعة');
   else S.cart.push({pid:p.id,name:p.name,company:p.company||'',unit:p.unit||'قطعة',warranty:p.warranty||'',price:+price||0,qty});
-  toast('تمت الإضافة إلى السلة','ok');
+  try{closeModal()}catch(e){}
+  try{beep('cart')}catch(e){}
+  toast('تمت الإضافة إلى السلة','ok',{quiet:true});
   updateCartBadge();
 }
 function cartLines(){return(S.cart||[]).length}
@@ -724,13 +746,9 @@ function updateCartBadge(){
   const grew=n>_lastCartN;_lastCartN=n;
   document.querySelectorAll('.cart-badge').forEach(el=>{el.textContent=n||'';el.style.display=n?'grid':'none';if(grew){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}});
   document.querySelectorAll('.bnav-cart').forEach(el=>el.classList.toggle('has-items',n>0));
-  let bar=$('#cartbar');
-  if(!bar){bar=document.createElement('button');bar.id='cartbar';bar.type='button';bar.setAttribute('data-act','navcart');document.body.appendChild(bar)}
-  if(n>0&&S.view==='shop'){
-    bar.innerHTML=`${ic('box')}<span class="cb-t">في السلة <b>${n}</b> ${n>10?'منتج':(n===1?'منتج':'منتجات')}</span><span class="cb-s">${cartTotal()>0?fmt(cartTotal())+' ج.م':''}</span><span class="cb-g">عرض السلة ›</span>`;
-    bar.style.display='flex';
-    if(grew){bar.classList.remove('bump');void bar.offsetWidth;bar.classList.add('bump')}
-  }else bar.style.display='none';
+  /* إخفاء الشريط العائم — الإشعار على أيقونة السلة فقط */
+  const bar=$('#cartbar');
+  if(bar)bar.style.display='none';
 }
 function bottomNavHTML(){
   const n=cartLines();
@@ -845,8 +863,9 @@ function cartWhatsApp(){
   openWhatsAppLink(waNum(),cartWaText());
 }
 
-function toast(msg,type){
-  if(type==='ok'||type==='err')beep(type);
+function toast(msg,type,opts){
+  opts=opts||{};
+  if(!opts.quiet&&(type==='ok'||type==='err'))beep(type);
   const t=document.createElement('div');t.textContent=msg;if(type)t.className=type;$('#toast').appendChild(t);
   setTimeout(()=>t.remove(),type==='err'?4500:2800);
 }
@@ -1012,7 +1031,7 @@ function gotCode(code){
     const now=Date.now();
     if(_lastContCode===code&&(now-_lastContTs)<1600)return;
     _lastContCode=code;_lastContTs=now;
-    try{beep('ok')}catch(e){}
+    try{beep('scan')}catch(e){}
     const cb=_scanCb;
     if(cb){try{cb(code)}catch(e){}}
     _contCount=(_contCount||0)+1;
@@ -1020,7 +1039,7 @@ function gotCode(code){
     return;
   }
   const cb=_scanCb;stopScan();
-  try{beep('ok')}catch(e){}
+  try{beep('scan')}catch(e){}
   if(cb)cb(code);
 }
 function scanBoxHTML(){
@@ -1961,7 +1980,8 @@ function saveInvoice(){
   if(!save())return;
   // keep draft data so user can review/edit; use clear button for new invoice
   S.inv._lastSavedNo=inv.no;
-  toast('تم حفظ الفاتورة رقم '+inv.no+instMsg+' — البيانات ما زالت ظاهرة. اضغط «مسح وفاتورة جديدة» لبدء فاتورة جديدة.','ok');
+  try{beep('invoice')}catch(e){}
+  toast('تم حفظ الفاتورة رقم '+inv.no+instMsg+' — البيانات ما زالت ظاهرة. اضغط «مسح وفاتورة جديدة» لبدء فاتورة جديدة.','ok',{quiet:true});
   lowNow.forEach(p=>toast('تنبيه: قلّت كمية '+p.name+' (المتبقي '+tot(p)+')','err'));
   refreshSec();showInvoice(inv.id);
 }
@@ -2538,7 +2558,7 @@ function saveQuickSale(){
   });
   const inv={id:uid(),no:DB.seq++,ts:Date.now(),cid:'',cname:'بيع نقدي',cphone:'',items:I.items.map(i=>({pid:i.pid,name:i.name,company:i.company||'',unit:i.unit||'قطعة',warranty:i.warranty||'',price:+i.price,qty:+i.qty,cost:+i.cost||0,alloc:i.alloc||{}})),sub:c.sub,disc:c.disc,total:c.total,paid:Math.min(c.paid,c.total),method:I.method||'نقدي',notes:(I.notes||'')+(I.notes?' | ':'')+'بيع دون فاتورة',noInvoice:true};
   DB.invoices.push(inv);if(!save())return;
-  S.qs=newQS();toast('تم تسجيل البيع (بدون فاتورة) بمبلغ '+money(inv.total),'ok');
+  S.qs=newQS();try{beep('invoice')}catch(e){}toast('تم تسجيل البيع (بدون فاتورة) بمبلغ '+money(inv.total),'ok',{quiet:true});
   lowNow.forEach(p=>toast('تنبيه: قلّت كمية '+p.name+' (المتبقي '+tot(p)+')','err'));
   refreshSec();
 }
@@ -2685,7 +2705,8 @@ function saveQuote(pdf){
     DB.qseq=q.no+1;DB.quotes.push(q);I.savedId=q.id;I.savedNo=q.no;
   }else{I.savedId=q.id;I.savedNo=q.no}
   if(!save())return;
-  toast('تم حفظ عرض السعر رقم '+q.no+(ens&&ens.created?' — وتم إضافة العميل للقائمة':'')+' (يمكنك التعديل)','ok');
+  try{beep('quote')}catch(e){}
+  toast('تم حفظ عرض السعر رقم '+q.no+(ens&&ens.created?' — وتم إضافة العميل للقائمة':'')+' (يمكنك التعديل)','ok',{quiet:true});
   refreshSec();showQuote(q.id);
   if(pdf)downloadPDF(q.id,$('#pdfbtn'));
 }
@@ -2853,7 +2874,7 @@ function saveGroupQuote(pdf){
     DB.qseq=q.no+1;DB.quotes.push(q);G.savedId=q.id;
   }
   if(!save())return;
-  toast('تم حفظ مقارنة الشركات رقم '+q.no,'ok');
+  try{beep('quote')}catch(e){}toast('تم حفظ مقارنة الشركات رقم '+q.no,'ok',{quiet:true});
   refreshSec();showQuote(q.id);
   if(pdf)downloadPDF(q.id,$('#pdfbtn'));
 }
@@ -3441,7 +3462,10 @@ function pCalc(e){
   }
 }
 ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.dataset&&e.target.dataset.pc)pCalc(e)}));
-document.addEventListener('click',e=>{if(e.target.closest('button,a,summary,label.btn'))beep('click')},true);
+document.addEventListener('click',e=>{
+  try{if(AC&&AC.state==='suspended')AC.resume();else if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)()}}catch(x){}
+  if(e.target.closest('button,a,summary,label.btn'))beep('click');
+},true);
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');
   if(t){const f=ACT[t.dataset.act];if(f)f(t.dataset,e);return}
