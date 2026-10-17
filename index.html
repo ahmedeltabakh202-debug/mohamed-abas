@@ -449,6 +449,9 @@ body.has-bnav #app{padding-bottom:78px}
 .gqt-card .gc-row{display:flex;justify-content:space-between;gap:6px;font-size:13px;padding:3px 0;color:var(--mute)}
 .gqt-card .gc-row b{color:var(--ink);font-family:'Changa',sans-serif;font-size:14px}
 .gqt-card .gc-row.ok{color:var(--ok)}.gqt-card .gc-row.ok b{color:var(--ok)}
+.profit-row{cursor:pointer;user-select:none;-webkit-user-select:none}
+.profit-row .profit-val{letter-spacing:.5px;min-width:4.5em;text-align:left;display:inline-block}
+.profit-row:active{opacity:.75}
 .gqt-card .gc-row.sell b{font-size:16px}
 .shop-hero{margin:6px 0 4px}
 .shop-hero .mainnav2{margin-top:10px}
@@ -663,7 +666,7 @@ const utilBtns=cls=>`<button class="${cls}" data-act="theme" aria-label="تبد�
 function updUtil(){document.querySelectorAll('[data-act="theme"]').forEach(b=>b.innerHTML=ic(isDark()?'sun':'moon'));document.querySelectorAll('[data-act="mute"]').forEach(b=>b.innerHTML=ic(isMuted()?'volx':'vol'))}
 
 /* ================= state ================= */
-const S={view:'shop',sec:null,q:'',cat:'all',co:'all',admin:false,inv:null,rep:{mode:'day',day:today(),month:today().slice(0,7)},cust:null,pq:'',cq:'',iq:'',cart:[],hist:['shop'],browse:null,bq:'',pFilter:null,pkKeep:true};
+const S={view:'shop',sec:null,q:'',cat:'all',co:'all',admin:false,inv:null,rep:{mode:'day',day:today(),month:today().slice(0,7)},cust:null,pq:'',cq:'',iq:'',cart:[],hist:['shop'],browse:null,bq:'',pFilter:null,pkKeep:true,showProfit:{}};
 try{if(sessionStorage.getItem('manar_admin')==='1')S.admin=true}catch(e){}
 
 /* ================= product helpers ================= */
@@ -1929,9 +1932,17 @@ function itemCost(it){
 function itemsCostSum(items){
   return (items||[]).reduce((a,i)=>a+itemCost(i)*(+i.qty||0),0);
 }
+function isProfitShown(key){return !!(S.showProfit&&S.showProfit[key])}
+function hideRowHTML(label,amount,key,style){
+  const on=isProfitShown(key);
+  const st=style||'';
+  return `<div class="profit-row" style="${st}" data-act="toggleprofit" data-k="${esc(key)}" title="اضغط لإظهار أو إخفاء ${esc(label)}"><span>${esc(label)} ${on?'▾':'▸'}</span><b class="profit-val">${on?money(amount):'••••'}</b></div>`;
+}
+function profitRowHTML(amount,key){return hideRowHTML('المكسب',amount,key,'color:var(--ok)')}
+function costRowHTML(amount,key){return hideRowHTML('تكلفة الشراء',amount,key,'')}
 function calc(){const I=S.inv;const sub=I.items.reduce((a,i)=>a+i.price*i.qty,0);const cost=itemsCostSum(I.items);const disc=Math.min(Math.max(+I.discount||0,0),sub);const total=sub-disc;const paid=I.paid===''?(I.method==='آجل'?0:total):Math.max(+I.paid||0,0);const profit=total-cost;return{sub,disc,total,paid,rem:Math.max(total-paid,0),cost,profit}}
 function updTotals(){const t=$('#tot');if(!t)return;const c=calc();const pd=$('#paid');if(pd)pd.placeholder=S.inv.method==='آجل'?'0 (آجل)':fmt(c.total);
-  t.innerHTML=`<div><span>المجموع (قبل الخصم)</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div><div><span>تكلفة الشراء</span><b>${money(c.cost)}</b></div><div style="color:var(--ok)"><span>المكسب</span><b>${money(c.profit)}</b></div><div><span>المدفوع</span><b>${money(c.paid)}</b></div>${c.rem?`<div style="color:var(--bad)"><span>المتبقي على العميل</span><b>${money(c.rem)}</b></div>`:''}`
+  t.innerHTML=`<div><span>المجموع (قبل الخصم)</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div>${costRowHTML(c.cost,'inv-cost')}${profitRowHTML(c.profit,'inv')}<div><span>المدفوع</span><b>${money(c.paid)}</b></div>${c.rem?`<div style="color:var(--bad)"><span>المتبقي على العميل</span><b>${money(c.rem)}</b></div>`:''}`
   const cr=$('#credit_rem');if(cr)cr.textContent=c.rem>0?('المتبقي '+money(c.rem)+' سيُسجَّل في التقسيط تلقائيًا عند الحفظ'):'لا يوجد متبقي — لن يُنشأ قسط';
 }
 function askQty(name,defQty,cb,unit){
@@ -2609,7 +2620,7 @@ function qsItemsHTML(){
 }
 function qsCalc(){const I=S.qs;const sub=I.items.reduce((a,i)=>a+i.price*i.qty,0);const cost=itemsCostSum(I.items);const disc=Math.min(Math.max(+I.discount||0,0),sub);const total=sub-disc;const paid=I.paid===''?total:Math.max(+I.paid||0,0);const profit=total-cost;return{sub,disc,total,paid,rem:Math.max(total-paid,0),cost,profit}}
 function qsUpdTotals(){const t=$('#qs_tot');if(!t)return;const c=qsCalc();const pd=$('#qs_paid');if(pd)pd.placeholder=fmt(c.total);
-  t.innerHTML=`<div><span>المجموع (قبل الخصم)</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div><div><span>تكلفة الشراء</span><b>${money(c.cost)}</b></div><div style="color:var(--ok)"><span>المكسب</span><b>${money(c.profit)}</b></div><div><span>المدفوع</span><b>${money(c.paid)}</b></div>`}
+  t.innerHTML=`<div><span>المجموع (قبل الخصم)</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div>${costRowHTML(c.cost,'qs-cost')}${profitRowHTML(c.profit,'qs')}<div><span>المدفوع</span><b>${money(c.paid)}</b></div>`}
 function qsAdd(pid,silent,qty){
   const p=prod(pid);if(!p)return;
   const u=unitOf(p);
@@ -2745,7 +2756,8 @@ function qtItemsHTML(){
 }
 function qtCalc(){const I=S.qt;const sub=I.items.reduce((a,i)=>a+i.price*i.qty,0);const cost=itemsCostSum(I.items);const disc=Math.min(Math.max(+I.discount||0,0),sub);const total=sub-disc;return{sub,disc,total,cost,profit:total-cost}}
 function qtUpdTotals(){const t=$('#qt_tot');if(!t||!S.qt)return;const c=qtCalc();
-  t.innerHTML=`<div><span>المجموع (قبل الخصم)</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div><div><span>تكلفة الشراء</span><b>${money(c.cost)}</b></div><div style="color:var(--ok)"><span>المكسب</span><b>${money(c.profit)}</b></div>`}
+  t.innerHTML=`<div><span>المجموع (قبل الخصم)</span><b>${money(c.sub)}</b></div>${c.disc?`<div><span>الخصم</span><b>- ${money(c.disc)}</b></div>`:''}<div class="g"><span>الإجمالي</span><span>${money(c.total)}</span></div>${costRowHTML(c.cost,'qt-cost')}${profitRowHTML(c.profit,'qt')}`
+}
 function qtAdd(pid,silent,qty){
   const p=prod(pid);if(!p)return;
   const u=unitOf(p);
@@ -2914,10 +2926,12 @@ function gqtTotalsHTML(){
   const costs=gqtCompanyCosts();
   return `<div class="gqt-cards">${G.companies.map(c=>{
     const sellT=t[c]||0;const costT=costs[c]||0;const profit=sellT-costT;
+    const key='gqt:'+c;
+    const on=isProfitShown(key);
     return `<div class="gqt-card"><div class="gc-name">${esc(c)}</div>
     <div class="gc-row sell"><span>الإجمالي</span><b>${money(sellT)}</b></div>
-    <div class="gc-row"><span>تكلفة الشراء</span><b>${money(costT)}</b></div>
-    <div class="gc-row ok"><span>المكسب</span><b>${money(profit)}</b></div></div>`;
+    ${(()=>{const ck='gqt-cost:'+c;const con=isProfitShown(ck);return `<div class="gc-row profit-row" data-act="toggleprofit" data-k="${esc(ck)}" title="اضغط لإظهار أو إخفاء تكلفة الشراء" style="cursor:pointer"><span>تكلفة الشراء ${con?'▾':'▸'}</span><b class="profit-val">${con?money(costT):'••••'}</b></div>`;})()}
+    <div class="gc-row ok profit-row" data-act="toggleprofit" data-k="${esc(key)}" title="اضغط لإظهار أو إخفاء المكسب" style="cursor:pointer"><span>المكسب ${on?'▾':'▸'}</span><b class="profit-val">${on?money(profit):'••••'}</b></div></div>`;
   }).join('')}</div>`;
 }
 function gqtUpd(){
@@ -3144,6 +3158,22 @@ function browseFilter(q){
 
 const ACT={
 close:closeModal,
+toggleprofit(d){
+  if(!S.showProfit)S.showProfit={};
+  const k=d.k||'';
+  S.showProfit[k]=!S.showProfit[k];
+  // أعد رسم الإجماليات حسب القسم الحالي
+  if(S.sec==='invoice')updTotals();
+  else if(S.sec==='quicksale')qsUpdTotals();
+  else if(S.sec==='quote'&&S.qtMode==='group'){const t=$('#gqt_tot');if(t)t.innerHTML=gqtTotalsHTML()}
+  else if(S.sec==='quote')qtUpdTotals();
+  else{
+    if($('#tot'))updTotals();
+    if($('#qs_tot'))qsUpdTotals();
+    if($('#qt_tot'))qtUpdTotals();
+    if($('#gqt_tot'))$('#gqt_tot').innerHTML=gqtTotalsHTML();
+  }
+},
 stopscan:stopScan,
 scancap(){
   releaseCam();
