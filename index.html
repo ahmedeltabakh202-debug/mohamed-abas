@@ -663,7 +663,7 @@ const utilBtns=cls=>`<button class="${cls}" data-act="theme" aria-label="تبد�
 function updUtil(){document.querySelectorAll('[data-act="theme"]').forEach(b=>b.innerHTML=ic(isDark()?'sun':'moon'));document.querySelectorAll('[data-act="mute"]').forEach(b=>b.innerHTML=ic(isMuted()?'volx':'vol'))}
 
 /* ================= state ================= */
-const S={view:'shop',sec:null,q:'',cat:'all',co:'all',admin:false,inv:null,rep:{mode:'day',day:today(),month:today().slice(0,7)},cust:null,pq:'',cq:'',iq:'',cart:[],hist:['shop'],browse:null,bq:'',pFilter:null};
+const S={view:'shop',sec:null,q:'',cat:'all',co:'all',admin:false,inv:null,rep:{mode:'day',day:today(),month:today().slice(0,7)},cust:null,pq:'',cq:'',iq:'',cart:[],hist:['shop'],browse:null,bq:'',pFilter:null,pkKeep:true};
 try{if(sessionStorage.getItem('manar_admin')==='1')S.admin=true}catch(e){}
 
 /* ================= product helpers ================= */
@@ -2946,7 +2946,10 @@ function gqtAddItem(name,qty,pid,basePrice){
 function gqtAddProd(pid){
   const p=prod(pid);if(!p)return;
   if(!(S.gqt&&S.gqt.companies.length)){toast('اختر الشركات أولًا','err');return}
-  askQty(p.name+(p.company?' — '+p.company:''),qtyStep(unitOf(p)),(q)=>gqtAddItem(p.name,q,p.id,sell(p)),unitOf(p));
+  askQty(p.name+(p.company?' — '+p.company:''),qtyStep(unitOf(p)),(q)=>{
+    gqtAddItem(p.name,q,p.id,sell(p));
+    if(S.pkKeep){try{ACT.gqtpk()}catch(e){}}
+  },unitOf(p));
 }
 
 function saveGroupQuote(pdf){
@@ -3321,15 +3324,27 @@ gqtcofilter(d){
   }else{const r=$('#gqt_res');if(r)r.innerHTML=''}
 },
 pkadd(d){
-  const after=()=>{if(S.pkKeep){const l=$('#pk_l');if(l)l.innerHTML=pkList(($('#pk_q')&&$('#pk_q').value)||'',($('#pk_c')&&$('#pk_c').value)||'',S.pkCo||'')}else closeModal()};
   const p=prod(d.id);if(!p)return;
-  if(S.sec==='quote'&&S.qtMode==='group'){closeModal();gqtAddProd(d.id);return}
+  const reopenPk=()=>{
+    if(!S.pkKeep){closeModal();return}
+    // أعد فتح قائمة المنتجات لإضافة المزيد
+    if(S.sec==='quote'&&S.qtMode==='group')ACT.gqtpk();
+    else if(S.sec==='quicksale')ACT.qspkopen();
+    else ACT.pkopen();
+  };
+  if(S.sec==='quote'&&S.qtMode==='group'){
+    askQty(p.name+(p.company?' — '+p.company:''),qtyStep(unitOf(p)),(q)=>{
+      gqtAddItem(p.name,q,p.id,sell(p));
+      reopenPk();
+    },unitOf(p));
+    return;
+  }
   askQty(p.name+(p.company?' — '+p.company:''),qtyStep(unitOf(p)),(q)=>{
     if(S.sec==='quote')qtAdd(d.id,true,q);
     else if(S.sec==='quicksale')qsAdd(d.id,true,q);
     else addToInv(d.id,true,q);
-    after();
-  });
+    reopenPk();
+  },unitOf(p));
 },
 rmitem(d){S.inv.items.splice(+d.i,1);$('#iitems').innerHTML=itemsHTML();updTotals()},
 qty(d){const it=S.inv.items[+d.i];const u=it.unit||(it.pid&&prod(it.pid)?unitOf(prod(it.pid)):'قطعة');const st=qtyStep(u);it.qty=normQty((+it.qty||st)+ +d.d,u);$('#qi'+d.i).value=it.qty;$('#lt'+d.i).textContent=fmt(it.price*it.qty);updTotals()},
