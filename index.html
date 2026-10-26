@@ -531,6 +531,42 @@ body.has-bnav #app{padding-bottom:78px}
 .bnav button[data-act="navhome"] svg{color:#1B1500;width:26px;height:26px}
 .bnav button[data-act="navhome"] span{font-weight:800;font-size:12.5px}
 .bnav button[data-act="navhome"]:active{transform:scale(.93)}
+
+.codesearch{margin:14px 0 8px;background:var(--sf);border:1.5px solid var(--line);border-radius:18px;padding:16px 16px 14px;box-shadow:0 8px 24px rgba(15,35,71,.08);position:relative;overflow:hidden}
+.codesearch::before{content:"";position:absolute;top:0;right:0;left:0;height:4px;background:linear-gradient(90deg,var(--y) 0%,#E89A00 50%,var(--cu) 100%);pointer-events:none}
+.codesearch .cs-h{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.codesearch .cs-h .cs-ico{width:44px;height:44px;border-radius:14px;background:linear-gradient(145deg,#FFF6D6 0%,#FFE08A 100%);color:var(--yink);display:grid;place-items:center;flex:none;border:1.5px solid rgba(255,196,0,.55);box-shadow:0 3px 10px rgba(255,196,0,.22)}
+.codesearch .cs-h .cs-ico svg{width:22px;height:22px;color:var(--cu)}
+.codesearch .cs-h b{font-family:'Changa',sans-serif;font-size:18px;display:block;line-height:1.25;color:var(--ink)}
+.codesearch .cs-h span{display:block;font-size:13px;color:var(--mute);font-weight:500;margin-top:2px}
+.codesearch .cs-r{display:flex;gap:10px;margin-top:12px;position:relative;z-index:1}
+.codesearch .cs-r input{flex:1;margin:0!important;min-height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--soft);color:var(--ink);text-transform:uppercase;letter-spacing:2.5px;font-weight:800;text-align:center;font-size:17px;padding:0 14px}
+.codesearch .cs-r input::placeholder{color:var(--mute);letter-spacing:1px;font-weight:600;text-transform:none}
+.codesearch .cs-r input:focus{outline:none;border-color:var(--y);background:var(--sf);box-shadow:0 0 0 3px rgba(255,196,0,.22)}
+.codesearch .cs-r .btn{min-height:50px;padding:0 22px;border-radius:12px;font-family:'Changa',sans-serif;font-size:16px;font-weight:800;border:0;background:linear-gradient(160deg,#0F2347 0%,#1B3566 100%);color:#fff;box-shadow:0 4px 14px rgba(15,35,71,.25)}
+.codesearch .cs-r .btn:active{transform:translateY(1px)}
+:root[data-theme="dark"] .codesearch{background:var(--sf);border-color:var(--line);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+:root[data-theme="dark"] .codesearch .cs-h .cs-ico{background:linear-gradient(145deg,#3A2E10,#2A2208);border-color:rgba(255,196,0,.4)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .codesearch{background:var(--sf);border-color:var(--line);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+:root:not([data-theme="light"]) .codesearch .cs-h .cs-ico{background:linear-gradient(145deg,#3A2E10,#2A2208);border-color:rgba(255,196,0,.4)}}
+.ptsbox{text-align:center;padding:18px 12px 16px;border-radius:20px;background:linear-gradient(135deg,#0F2347,#24478f);color:#fff;border-bottom:6px solid var(--y);margin-bottom:10px;box-shadow:0 10px 24px rgba(15,35,71,.3);position:relative;overflow:hidden}
+.ptsbox span{display:block;font-size:15px;color:#C9D3DB}.ptsbox b{display:block;font-family:'Changa',sans-serif;font-size:68px;line-height:1.1;color:var(--y);text-shadow:0 0 22px rgba(255,196,0,.4)}.ptsbox small{display:block;font-size:12.5px;color:#C9D3DB;margin-top:2px}
+.ptsbox .pts-gift{display:inline-block;margin-top:8px;background:rgba(255,196,0,.18);border:1px solid rgba(255,196,0,.45);color:var(--y);font-weight:700;font-size:13px;padding:5px 12px;border-radius:999px}
+.ptsname{display:flex;justify-content:space-between;align-items:center;margin:8px 2px;font-size:17px}.ptsname span{font-weight:800;letter-spacing:2px;color:var(--cu)}
+#ptsBurst{position:fixed;inset:0;pointer-events:none;z-index:120;overflow:hidden}
+.pts-p{position:absolute;font-size:22px;line-height:1;will-change:transform,opacity;animation:ptsFly var(--dur,2.4s) ease-out forwards;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+@keyframes ptsFly{
+  0%{transform:translate3d(0,0,0) scale(.4) rotate(0deg);opacity:0}
+  12%{opacity:1}
+  100%{transform:translate3d(var(--tx),var(--ty),0) scale(1.05) rotate(var(--rot));opacity:0}
+}
+.pts-spark{position:absolute;width:8px;height:8px;border-radius:50%;animation:ptsSpark var(--dur,1.6s) ease-out forwards;box-shadow:0 0 10px currentColor}
+@keyframes ptsSpark{
+  0%{transform:translate3d(0,0,0) scale(.5);opacity:1}
+  100%{transform:translate3d(var(--tx),var(--ty),0) scale(0);opacity:0}
+}
+.ptsbox.pts-pop b{animation:ptsBounce .7s cubic-bezier(.2,1.4,.4,1)}
+@keyframes ptsBounce{0%{transform:scale(.6);opacity:.4}55%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" async=""></script></head>
 <body>
@@ -1450,7 +1486,16 @@ function shopHTML(){
   ${(hours||address)?`<div class="shop-meta">${address?`<span>${ic('store')}<b style="color:var(--ink);font-weight:600">${esc(address)}</b></span>`:''}${hours?`<span>${ic('calendar')}${esc(hours)}</span>`:''}<span>${ic('phone')}<span dir="ltr">${ph}</span></span></div>`:''}
   <div class="tagline"><div class="wrap">${ic('bolt')}<span>${esc(P.tagline||'')}</span></div></div>
   <div class="wrap">
-    ${bannerOn&&bannerTxt?`<div class="promo"><div class="pi">${ic('tag')}</div><div><b>${esc(bannerTitle)}</b><span>${esc(bannerTxt)}</span></div></div>`:''}
+    <div class="codesearch">
+      <div class="cs-h">
+        <div class="cs-ico">${ic('users')}</div>
+        <div><b>البحث بالكود</b><span>اكتب كود العميل لعرض فواتيرك ونقاطك</span></div>
+      </div>
+      <div class="cs-r">
+        <input type="text" id="cs_code" dir="ltr" placeholder="مثال: M4821" autocomplete="off" autocapitalize="characters" enterkeyhint="search">
+        <button class="btn" data-act="codesearch">بحث</button>
+      </div>
+    </div>
     <div class="shop-hero">
     <nav class="mainnav2" aria-label="القائمة الرئيسية">
       <button class="btn nav-all wide" data-act="allp">${ic('box')} كل المنتجات</button>
@@ -1952,17 +1997,23 @@ function saveProduct(id){
 }
 
 /* ================= invoice ================= */
-const newInv=()=>({custSel:'',cname:'',cphone:'',items:[],discount:'',paid:'',method:'نقدي',notes:'',instN:'1',instGap:'m',instDate:''});
+const newInv=()=>({custSel:'',cname:'',cphone:'',ccode:'',items:[],discount:'',paid:'',method:'نقدي',notes:'',instN:'1',instGap:'m',instDate:''});
 function invoiceHTML(){
   if(!S.inv)S.inv=newInv();const I=S.inv;
   return `<div class="card"><h3>العميل</h3>
     <select id="csel" data-ch="csel"><option value="">عميل نقدي (بدون تسجيل)</option>${DB.customers.map(c=>`<option value="${c.id}" ${I.custSel===c.id?'selected':''}>${esc(c.name)}${c.phone?' - '+esc(c.phone):''}</option>`).join('')}<option value="new" ${I.custSel==='new'?'selected':''}>+ عميل جديد</option></select>
     <div id="newc" style="display:${I.custSel==='new'?'block':'none'};margin-top:10px">
       <input type="text" id="inv_cname" data-in="cname" placeholder="اسم العميل" value="${esc(I.cname)}" style="margin-bottom:8px">
-      <div class="row" style="align-items:stretch;gap:8px">
+      <div class="row" style="align-items:stretch;gap:8px;margin-bottom:8px">
         <input type="tel" id="inv_cphone" data-in="cphone" placeholder="رقم الهاتف" value="${esc(I.cphone)}" style="margin:0;flex:1">
         <button type="button" class="btn sm dark" data-act="pickcontact" data-name="inv_cname" data-phone="inv_cphone" style="min-height:46px;white-space:nowrap" title="من جهات الاتصال">${ic('users')} من الموبايل</button>
       </div>
+      <label class="f" style="margin:0">كود العميل <small>(للبحث ومتابعة النقاط)</small>
+        <div class="row" style="align-items:stretch;margin-top:4px;gap:8px">
+          <input type="text" id="inv_ccode" data-in="ccode" dir="ltr" value="${esc(I.ccode||'')}" placeholder="مثال: M4821" autocapitalize="characters" style="margin:0;flex:1;text-transform:uppercase;font-weight:700;letter-spacing:1px">
+          <button type="button" class="btn sm dark" data-act="gencode" data-id="" style="min-height:46px;white-space:nowrap">${ic('bolt')} عشوائي</button>
+        </div>
+      </label>
     </div></div>
   <div class="card"><h3>إضافة منتج</h3>
     <div class="row" style="flex-wrap:wrap"><button class="btn dark" style="min-height:56px;font-size:19px;font-family:'Changa',sans-serif;flex:1" data-act="pkopen">${ic('box')} اختر منتج</button><button class="icbtn" style="width:56px;height:56px" data-act="scani" aria-label="مسح">${ic('camera')}</button><button type="button" class="btn sm dark" style="min-height:56px;padding:8px 12px" data-act="scanicont">${ic('camera')} متكرر</button><button class="icbtn" style="width:56px;height:56px" data-act="scanii" aria-label="من صورة">${ic('image')}</button></div>
@@ -2154,7 +2205,13 @@ function saveInvoice(){
   let cid='',cname='عميل نقدي',cphone='';
   if(I.custSel==='new'){
     if(!I.cname.trim()){toast('اكتب اسم العميل الجديد','err');return}
-    const c={id:uid(),name:I.cname.trim(),phone:I.cphone.trim(),address:'',notes:''};DB.customers.push(c);cid=c.id;cname=c.name;cphone=c.phone;
+    let code=(I.ccode||'').trim().toUpperCase();
+    if(code&&DB.customers.some(x=>String(x.code||'').toUpperCase()===code)){toast('الكود ده مستخدم لعميل تاني — اضغط عشوائي','err');return}
+    if(!code){
+      let t=0;const n=I.cname.trim();
+      do{code=codeLetter(n)+String(Math.floor(1000+Math.random()*9000))}while(DB.customers.some(x=>String(x.code||'').toUpperCase()===code)&&++t<300);
+    }
+    const c={id:uid(),name:I.cname.trim(),phone:I.cphone.trim(),address:'',notes:'',code};DB.customers.push(c);cid=c.id;cname=c.name;cphone=c.phone;
   }else if(I.custSel){const c=cust(I.custSel);if(c){cid=c.id;cname=c.name;cphone=c.phone}}
   const c=calc();
   if(c.paid<c.total&&!cid){toast('الدفع الجزئي يحتاج عميلًا مسجلًا. اختر عميلًا أو سجّل عميلًا جديدًا.','err');if(I.custSel==='new'){DB.customers.pop()}return}
@@ -2440,6 +2497,10 @@ function custDetail(id){
   <div class="row2" style="margin-top:12px"><button class="btn sm line" data-act="editc" data-id="${id}">${ic('edit')} تعديل</button>${d>0?`<button class="btn sm" data-act="payc" data-id="${id}">${ic('wallet')} تسجيل دفعة</button>`:`<button class="btn sm danger" data-act="delc" data-id="${id}">${ic('trash')} حذف</button>`}</div></div>
   <h3 style="margin:14px 0 8px">فواتير العميل</h3>${L.length?L.map(i=>{const r=i.total-i.paid;return `<button class="item" data-act="vinv" data-id="${i.id}"><span class="th">${ic('receipt')}</span><span class="mid"><b>فاتورة ${i.no}</b><span>${fdate(i.ts)}</span></span><span style="text-align:left"><b>${money(i.total)}</b>${r>0?`<br><span class="pill low">متبقي ${fmt(r)}</span>`:''}</span></button>`}).join(''):'<div class="empty">لا توجد فواتير لهذا العميل.</div>'}`;
 }
+
+function codeLetter(n){const m={'ا':'A','أ':'A','إ':'A','آ':'A','ء':'A','ع':'A','ب':'B','ت':'T','ث':'T','ط':'T','ج':'J','ح':'H','ه':'H','ة':'H','خ':'K','ك':'K','د':'D','ض':'D','ذ':'Z','ز':'Z','ظ':'Z','ر':'R','س':'S','ش':'S','ص':'S','غ':'G','ف':'F','ق':'Q','ل':'L','م':'M','ن':'N','و':'W','ؤ':'W','ي':'Y','ى':'Y','ئ':'Y'};const ch=String(n||'').replace(/[\u064B-\u0652]/g,'').trim()[0]||'';return /[A-Za-z]/.test(ch)?ch.toUpperCase():(m[ch]||'X')}
+function custRule(c){return{m:+(c&&c.ptsMoney)>0?+c.ptsMoney:1000,p:+(c&&c.ptsPts)>0?+c.ptsPts:1}}
+function custPts(c){const r=custRule(c),base=DB.invoices.filter(i=>i.cid===c.id&&!i.isQuote).reduce((a,i)=>a+(+i.total||0),0),earned=Math.floor(base/r.m)*r.p,used=Math.max(0,+(c&&c.ptsRedeemed)||0),pts=Math.max(0,earned-used);return{r,base,earned,used,pts,left:r.m-(base%r.m)}}
 function custForm(id){
   const c=id?cust(id):null;
   const canPick=typeof navigator!=='undefined'&&navigator.contacts&&typeof navigator.contacts.select==='function';
@@ -2451,6 +2512,15 @@ function custForm(id){
       <button type="button" class="btn sm dark" data-act="pickcontact" style="min-height:46px;white-space:nowrap" title="من جهات الاتصال">${ic('users')} من الموبايل</button>
     </div>
   </label>
+  <label class="f">كود العميل <small>(للبحث ومتابعة النقاط)</small>
+    <div class="row" style="align-items:stretch;margin-top:4px">
+      <input type="text" id="c_code" dir="ltr" value="${esc(c&&c.code||'')}" placeholder="مثال: M4821" autocapitalize="characters" style="margin:0;flex:1;text-transform:uppercase;font-weight:700;letter-spacing:1px">
+      <button type="button" class="btn sm dark" data-act="gencode" data-id="${c?c.id:''}" style="min-height:46px;white-space:nowrap">${ic('bolt')} عشوائي</button>
+    </div>
+  </label>
+  <div class="f">نظام النقاط <small>(اكتب المبلغ وعدد النقاط)</small>
+    <div class="row" style="align-items:center;gap:8px;margin-top:4px;flex-wrap:nowrap"><span>كل</span><input type="number" id="c_pm" inputmode="decimal" min="1" value="${(c&&c.ptsMoney)||DB.settings.ptsM||1000}" style="margin:0;flex:1;min-width:0"><span>ج =</span><input type="number" id="c_pp" inputmode="decimal" min="1" value="${(c&&c.ptsPts)||DB.settings.ptsP||1}" style="margin:0;width:78px"><span>نقطة</span></div>
+  </div>
   <label class="f">العنوان <small>(اختياري)</small><input type="text" id="c_addr" value="${esc(c?c.address:'')}"></label><label class="f">ملاحظات <small>(اختياري)</small><textarea id="c_notes">${esc(c?c.notes:'')}</textarea></label>
   <button class="btn block" data-act="savec" data-id="${c?c.id:''}">${ic('check')} حفظ</button>`);
 }
@@ -3692,9 +3762,92 @@ shareinv(d){
 delinv(d){ask('إلغاء الفاتورة سيحذفها ويُرجع الكميات للمخزن. متابعة؟','إلغاء الفاتورة',()=>cancelInvoice(d.id),true)},
 /* customers */
 addc(){custForm()},editc(d){custForm(d.id)},
+gencode(d){
+  const nameEl=$('#c_name')||$('#inv_cname');
+  const codeEl=$('#c_code')||$('#inv_ccode');
+  const n=(nameEl&&nameEl.value||'').trim();
+  if(!n){toast('اكتب اسم العميل الأول','err');return}
+  let code,t=0;
+  do{code=codeLetter(n)+String(Math.floor(1000+Math.random()*9000))}while(DB.customers.some(c=>c.id!==(d&&d.id)&&String(c.code||'').toUpperCase()===code)&&++t<300);
+  if(codeEl)codeEl.value=code;
+  if(S.inv&&$('#inv_ccode')){S.inv.ccode=code}
+},
+codesearch(d){
+  const inp=$('#cs_code'),code=String((d&&d.code)||(inp&&inp.value)||'').trim().toUpperCase().replace(/[٠-٩]/g,x=>'٠١٢٣٤٥٦٧٨٩'.indexOf(x));
+  if(!code){toast('اكتب كود العميل','err');return}
+  const c=DB.customers.find(x=>x.code&&String(x.code).toUpperCase()===code);
+  if(!c){toast('الكود غير صحيح — راجع الكود وجرّب تاني','err');return}
+  const P=custPts(c),invs=DB.invoices.filter(i=>i.cid===c.id&&!i.isQuote).sort((a,b)=>b.ts-a.ts);
+  const paid=invs.reduce((a,i)=>a+Math.min(+i.paid||0,+i.total||0),0),due=invs.reduce((a,i)=>a+Math.max((+i.total||0)-(+i.paid||0),0),0);
+  const adminBtns=S.admin?`<div style="margin:12px 0 4px"><button class="btn block danger" data-act="redeempts" data-id="${c.id}" ${P.pts<=0?'disabled style="opacity:.45"':''}>${ic('check')} تم استلام النقاط — مسح الرصيد</button>
+  <p class="mute c" style="margin:6px 2px 0;font-size:12px">يظهر للإدارة فقط · يصفّر النقاط الحالية بعد ما العميل يستلم هديته</p></div>`:'';
+  openModal(`<div class="mh"><h3>حساب العميل</h3><button class="icbtn" data-act="close" aria-label="إغلاق">${ic('x')}</button></div>
+  <div class="ptsbox pts-pop" id="ptsBox"><span>🎁 رصيد النقاط — هدية لك</span><b>${fmt(P.pts)}</b><small>كل ${fmt(P.r.m)} ج = ${fmt(P.r.p)} نقطة · باقي ${fmt(P.left)} ج للنقطة الجاية</small>${P.pts>0?'<div class="pts-gift">هدية من المنار · استمتع بنقاطك</div>':''}${P.used>0?`<small style="margin-top:6px;opacity:.85">تم استلام سابقًا: ${fmt(P.used)} نقطة</small>`:''}</div>
+  <div class="ptsname"><b>${esc(c.name)}</b><span dir="ltr">${esc(c.code)}</span></div>
+  <div class="stats"><div class="st"><span>عدد الفواتير</span><b>${fmt(invs.length)}</b></div><div class="st"><span>إجمالي المشتريات</span><b>${fmt(P.base)}</b></div><div class="st"><span>المتبقي عليك</span><b style="color:${due>0.5?'var(--bad)':'var(--ok)'}">${fmt(due)}</b></div></div>
+  ${adminBtns}
+  <div class="card"><h3>فواتيرك</h3>${invs.length?invs.map(i=>{const r=Math.max((+i.total||0)-(+i.paid||0),0);return `<button class="item" data-act="vinvro" data-id="${i.id}"><span class="th">${ic('receipt')}</span><span class="mid"><b>${i.noInvoice?'بيع دون فاتورة':'فاتورة '+i.no}</b><span>${fdate(i.ts)}${r>0.5?' · متبقي '+fmt(r):' · مسددة'}</span></span><b>${fmt(i.total)}</b></button>`}).join(''):'<p class="mute">لا توجد فواتير بعد.</p>'}</div>`,true);
+  setTimeout(()=>{try{celebratePts(P.pts)}catch(e){}},60);
+},
+celebratePts(pts){
+  try{beep('ok')}catch(e){}
+  let layer=$('#ptsBurst');
+  if(layer)layer.remove();
+  layer=document.createElement('div');layer.id='ptsBurst';document.body.appendChild(layer);
+  const emojis=['🎁','🎉','✨','🎊','⭐','💫','🎀','💛','🪙','🌟'];
+  const colors=['#FFC400','#FF6B6B','#4ECDC4','#FFE66D','#FF8C42','#A78BFA','#F472B6','#34D399'];
+  const n=Math.min(42,18+Math.max(0,+pts||0));
+  const cx=window.innerWidth/2, cy=Math.min(window.innerHeight*0.32, 280);
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div');p.className='pts-p';
+    p.textContent=emojis[i%emojis.length];
+    const ang=(Math.PI*2)*(i/n)+(Math.random()*.4);
+    const dist=80+Math.random()*160;
+    p.style.left=cx+'px';p.style.top=cy+'px';
+    p.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');
+    p.style.setProperty('--ty',(Math.sin(ang)*dist - 40 - Math.random()*120)+'px');
+    p.style.setProperty('--rot',(-40+Math.random()*80)+'deg');
+    p.style.setProperty('--dur',(1.8+Math.random()*1.2)+'s');
+    p.style.fontSize=(18+Math.random()*14)+'px';
+    layer.appendChild(p);
+  }
+  for(let i=0;i<28;i++){
+    const s=document.createElement('div');s.className='pts-spark';
+    const ang=Math.random()*Math.PI*2, dist=40+Math.random()*140;
+    s.style.left=cx+'px';s.style.top=cy+'px';
+    s.style.background=colors[i%colors.length];s.style.color=s.style.background;
+    s.style.setProperty('--tx',(Math.cos(ang)*dist)+'px');
+    s.style.setProperty('--ty',(Math.sin(ang)*dist - Math.random()*80)+'px');
+    s.style.setProperty('--dur',(1.1+Math.random()*1)+'s');
+    layer.appendChild(s);
+  }
+  setTimeout(()=>{try{layer.remove()}catch(e){}},3200);
+},
+redeempts(d){
+  if(!S.admin){toast('متاح للإدارة فقط','err');return}
+  const c=cust(d.id);if(!c){toast('العميل غير موجود','err');return}
+  const P=custPts(c);
+  if(P.pts<=0){toast('مفيش نقاط تستلمها','err');return}
+  ask('تأكيد استلام العميل لـ '+fmt(P.pts)+' نقطة؟ هيتصفر الرصيد الحالي.','تأكيد الاستلام',()=>{
+    c.ptsRedeemed=(+(c.ptsRedeemed)||0)+P.pts;
+    save();
+    toast('تم مسح النقاط بعد الاستلام 🎁','ok');
+    ACT.codesearch({code:c.code});
+  },true);
+},
+vinvro(d){
+  const inv=DB.invoices.find(i=>i.id===d.id);if(!inv)return;const c=cust(inv.cid);
+  const k=Math.min(1,(Math.min(window.innerWidth,820)-48)/794);
+  openModal(`<div class="mh"><h3>${inv.noInvoice?'بيع دون فاتورة':'فاتورة رقم '+inv.no}</h3><button class="icbtn" data-act="close" aria-label="إغلاق">${ic('x')}</button></div>
+  <div class="row2" style="margin-bottom:10px"><button class="btn" data-act="pdf" data-id="${inv.id}" id="pdfbtn">${ic('download')} تحميل PDF</button><button class="btn line" data-act="codesearch" data-code="${esc(c?c.code:'')}">${ic('back')} رجوع للحساب</button></div>
+  <div class="prev"><div style="zoom:${k}">${invHTML(inv)}</div></div>`,true);
+},
 savec(d){
   const name=$('#c_name').value.trim();if(!name){toast('اكتب اسم العميل','err');return}
-  const c=d.id?cust(d.id):{id:uid()};Object.assign(c,{name,phone:$('#c_phone').value.trim(),address:$('#c_addr').value.trim(),notes:$('#c_notes').value.trim()});
+  const code=($('#c_code').value||'').trim().toUpperCase();
+  if(code&&DB.customers.some(x=>x.id!==d.id&&String(x.code||'').toUpperCase()===code)){toast('الكود ده مستخدم لعميل تاني — اضغط عشوائي','err');return}
+  const pm=+$('#c_pm').value>0?+$('#c_pm').value:1000,pp=+$('#c_pp').value>0?+$('#c_pp').value:1;DB.settings.ptsM=pm;DB.settings.ptsP=pp;
+  const c=d.id?cust(d.id):{id:uid()};Object.assign(c,{name,phone:$('#c_phone').value.trim(),address:$('#c_addr').value.trim(),notes:$('#c_notes').value.trim(),code,ptsMoney:pm,ptsPts:pp});
   if(!d.id)DB.customers.push(c);DB.invoices.forEach(i=>{if(i.cid===c.id){i.cname=c.name;i.cphone=c.phone}});save();closeModal();toast('تم الحفظ','ok');refreshSec();
 },
 vcust(d){S.cust=d.id;refreshSec()},ccback(){S.cust=null;refreshSec()},
@@ -4058,6 +4211,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){if($('#scanbox').classList.contains('open'))stopScan();else closeModal();return}
   if(e.key==='Enter'&&e.target&&e.target.id==='cash_code'){e.preventDefault();ACT.cashgo()}
+  if(e.key==='Enter'&&e.target&&e.target.id==='cs_code'){e.preventDefault();ACT.codesearch({})}
 });
 document.addEventListener('input',e=>{
   const t=e.target,k=t.dataset&&t.dataset.in;if(!k)return;
@@ -4071,6 +4225,7 @@ document.addEventListener('input',e=>{
     case'iq':S.iq=t.value;$('#ilist').innerHTML=ilistHTML();break;
     case'cname':I.cname=t.value;break;
     case'cphone':I.cphone=t.value;break;
+    case'ccode':I.ccode=t.value;break;
     case'inotes':I.notes=t.value;break;
     case'disc':I.discount=t.value;updTotals();break;
     case'paid':I.paid=t.value;updTotals();break;
