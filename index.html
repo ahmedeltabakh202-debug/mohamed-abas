@@ -3542,7 +3542,7 @@ const FB={
   async sync(){
     if(this.busy){toast('المزامنة شغالة الآن…','warn');return}
     if(!this.isEnabled()){
-      toast('المزامنة غير مفعلة — اضغط «حفظ وتفعيل» أولاً','warn');
+      toast('المزامنة متوقفة أو الرابط/الكود ناقص — افتح إعدادات المزامنة','warn');
       this.showPanel();
       return;
     }
@@ -3591,7 +3591,7 @@ const FB={
     DB.settings.fbEnabled=true;
     save();
     this.setEnabled(true);
-    toast('تم الحفظ وتفعيل المزامنة ✓','ok');
+    toast('تم الحفظ الإعدادات المزامنة ✓','ok');
     try{beep('ok')}catch(e){}
     return true;
   },
@@ -3631,11 +3631,16 @@ const FB={
     <p class="mute" style="margin:10px 0 0;font-size:11px;line-height:1.5;opacity:.85">مهم: لازم قواعد Firebase تسمح بالقراءة والكتابة (".read": true, ".write": true) على الأقل أثناء الإعداد.</p>`);
   },
   isEnabled(){
+    // تتفعل لوحدها لو فيه رابط وكود محل صالحين — من غير زر حفظ
     try{
-      if(localStorage.getItem('manar_fb_enabled')==='0')return false;
-      if(localStorage.getItem('manar_fb_enabled')==='1')return true;
+      if(localStorage.getItem('manar_fb_enabled')==='0')return false; // إيقاف يدوي فقط
     }catch(e){}
-    return !!(DB&&DB.settings&&DB.settings.fbEnabled!==false&&(DB.settings.fbUrl||localStorage.getItem('manar_fb_url')));
+    const cfg=fbCfg();
+    const url=(cfg.url||'').trim();
+    const store=(cfg.store||'').trim();
+    if(!url||!store)return false;
+    if(url.includes('xxxx')||url.includes('....'))return false;
+    return true;
   },
   setEnabled(on){
     try{localStorage.setItem('manar_fb_enabled',on?'1':'0')}catch(e){}
