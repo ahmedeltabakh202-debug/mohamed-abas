@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>المنار</title>
+<script>
+(function(){
+  // Redirect any missing path back to the app root (works for GitHub Pages project sites)
+  var path = location.pathname || '';
+  var base = path;
+  // If path ends with a file that 404'd, go up to folder
+  if (/\.[a-zA-Z0-9]+$/.test(base)) {
+    base = base.replace(/\/[^\/]+$/, '/');
+  } else if (!base.endsWith('/')) {
+    base = base.replace(/\/[^\/]+$/, '/') || '/';
+  }
+  // Prefer index.html in same folder
+  var target = base + (base.endsWith('/') ? '' : '/') + 'index.html';
+  // Avoid infinite loop
+  if (location.pathname.indexOf('404') === -1) {
+    location.replace(target + (location.search||'') + (location.hash||''));
+  } else {
+    location.replace('./index.html');
+  }
+})();
+</script>
+<meta http-equiv="refresh" content="0;url=./index.html">
+</head>
+<body style="margin:0;background:#0F2347;color:#fff;font-family:sans-serif;display:grid;place-items:center;min-height:100vh">
+  <p>جاري فتح المنار…</p>
+</body>
+</html>
